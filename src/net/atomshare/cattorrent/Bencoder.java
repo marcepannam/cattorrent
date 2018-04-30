@@ -1,23 +1,21 @@
 package net.atomshare.cattorrent;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.*;
 import java.util.*;
-
 import static java.lang.Character.isDigit;
 
 public class Bencoder {
+
+    public static InputStream input(String name) throws  FileNotFoundException{
+        return new FileInputStream(name);
+    }
+
     public static Object decode(InputStream in) throws IOException {
 
         char b = (char)in.read();
 
         if(isDigit(b)){
             byte [] out = parseString(b, in);
-            return out;
-            //String result = toString(out);
-            //return result;
+            return new ByteString(out);
         }
 
         if(b == 'i') {
@@ -26,46 +24,33 @@ public class Bencoder {
         }
 
         if(b == 'l'){
-            char d = (char)in.read();
+            byte d = (byte)in.read();
             List lista = new ArrayList<Object>();
             lista = parseList(in, (ArrayList<Object>) lista, d);
             return lista;
         }
 
         if(b == 'd'){
-            byte d = (byte)in.read();
-            Map<Object, Object> mapa = new Hashtable<Object, Object>();
-            mapa = parseDictionary(mapa, (char) d, in);
+            Map<Object, Object> mapa = new HashMap<>();
+            mapa =  parseDictionary(mapa, in);
             return mapa;
         }
 
-        return "nie dziala";
+        throw new IOException("invalid type '" + b + "'");
     }
 
-    static Map<Object, Object> parseDictionary (Map<Object, Object> mapa, char d, InputStream in)throws IOException{
+    static Map<Object, Object> parseDictionary (Map<Object, Object> mapa, InputStream in)throws IOException{
+        byte d = (byte)in.read();
         if(d != 'e'){
-            char b = (char)in.read();
-            byte [] value = parseString(b, in);
-            b = (char)in.read();
-            byte[] k  = parseString(b, in);
-            String key = toString(k);
-            mapa.put(value, key);
-            b = (char)in.read();
-            parseDictionary(mapa, b, in);
+            PushbackInputStream pis = new PushbackInputStream(in, 1);
+            pis.unread(d);
+            Object key = decode(pis);
+            Object value = decode(in);
+            mapa.put(key, value);
+            parseDictionary(mapa, in);
         }
 
         return mapa;
-    }
-
-    static String toString(byte [] out){
-        String str = "";
-
-        for(int i = 0; i < out.length; i++)
-        {
-            str += (char)out[i];
-        }
-
-        return str;
     }
 
     static byte [] parseString (char b, InputStream in) throws IOException{
@@ -91,49 +76,34 @@ public class Bencoder {
             s += d;
             d = (char) in.read();
         }
-        d = (char) in.read();
         Integer out = Integer.parseInt(s);
         return out;
     }
 
 
-    static ArrayList<Object> parseList(InputStream in, ArrayList<Object> lista, char d) throws IOException{
-        String s = "";
-        while (d != ':') {
-            s += d;
-            d = (char) in.read();
+    static ArrayList<Object> parseList(InputStream in, ArrayList<Object> lista, byte b) throws IOException{
+       while((char)b != 'e'){
+            PushbackInputStream pis = new PushbackInputStream(in, 1);
+            pis.unread(b);
+            Object o = decode(pis);
+            lista.add(o);
+            b = (byte) in.read();
         }
-        Integer len = Integer.parseInt(s);
-        String ss = "";
-        for (int i = 0; i < len; i++) {
-            d = (char) in.read();
-            ss += d;
-        }
-        lista.add(ss);
-
-        d = (char) in.read();
-        if(d != 'e') parseList(in, lista, d);
         return  lista;
     }
+
+    //overload
 
     public static Object decode(byte[] a) throws IOException {
         return decode(new ByteArrayInputStream(a));
     }
-
-    public static void main(String[] s) throws IOException {
-
-
-        Object o = decode("4:spam".getBytes(StandardCharsets.UTF_8));
-        byte[] bb = (byte[])o;
-        if (!Objects.equals(new String(bb), "spam")) throw new AssertionError();
-
-        o = decode("i51e".getBytes(StandardCharsets.UTF_8));
-        if (!Objects.equals(o, 51)) throw new AssertionError();
-
-
-        o = decode("i-51e".getBytes(StandardCharsets.UTF_8));
-        if (!Objects.equals(o, -51)) throw new AssertionError();
-        
+    public static Object decode(ByteString a) throws IOException {
+        return decode(new ByteArrayInputStream(a.getBytes()));
     }
+
+    public static void main(String[] args)  {
+
+    }
+
 
 }
