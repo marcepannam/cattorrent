@@ -55,7 +55,7 @@ public class Window extends JFrame implements ActionListener{
             }
 
             case 1:{
-                System.out.println("powinno sie wylonczyc");
+                System.out.println("powinno sie wylaczyc");
                 myWindow.dispose();
                 break;
             }

@@ -3,7 +3,7 @@ package net.atomshare.cattorrent;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class ByteString {
+public class ByteString implements Comparable<ByteString> {
     // https://ideone.com/edCdbc
     private byte[] data;
 
@@ -33,7 +33,23 @@ public class ByteString {
         }
     }
 
+    public int length() {
+        return data.length;
+    }
+
     public int hashCode() {
         return Arrays.hashCode(data);
+    }
+
+    @Override
+    public int compareTo(ByteString byteString) {
+        int len;
+        len = Math.min(length(), byteString.length());
+        for(int i=0; i<len; i++){
+            if(byteString.data[i] > this.data[i]) return -1;
+            if(byteString.data[i] < this.data[i]) return 1;
+        }
+        if(byteString.length() > length()) return -1;
+        else return 1;
     }
 }

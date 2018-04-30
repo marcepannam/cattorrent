@@ -101,9 +101,58 @@ public class Bencoder {
         return decode(new ByteArrayInputStream(a.getBytes()));
     }
 
-    public static void main(String[] args)  {
+    public static void encode(Object o, OutputStream out) throws IOException {
+        if(o instanceof ByteString){
+            ByteString str = (ByteString) o;
+            out.write(new ByteString(str.length()+":").getBytes());
+            out.write(str.getBytes());
+            return;
+        }
+
+        if(o instanceof Integer){
+            Integer inte = (Integer) o;
+            out.write(new ByteString("i"+inte+"e").getBytes());
+            return;
+        }
+
+        if(o instanceof List){
+            List l =  (List) o;
+            out.write(new ByteString("l").getBytes());
+            for(Object item : l){
+                encode(item, out);
+            }
+            out.write(new ByteString("e").getBytes());
+            return;
+        }
+
+        if(o instanceof Map) {
+            // keys must be sorted (because we compute SHA1 hash)
+            Map<Object, Object> sortedMap = new TreeMap<Object, Object>((Map)o);
+            out.write(new ByteString("d").getBytes());
+            for(Map.Entry entry : sortedMap.entrySet()) {
+                encode( entry.getKey(), out);
+                encode( entry.getValue(), out);
+            }
+            out.write(new ByteString("e").getBytes());
+            return;
+        }
+
+        throw new IllegalArgumentException(o + " has unknown type");
 
     }
 
+    public static ByteString encode(Object o) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            encode(o, out);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return new ByteString(out.toByteArray());
+    }
+
+    public static void main(String[] args)  {
+
+    }
 
 }
