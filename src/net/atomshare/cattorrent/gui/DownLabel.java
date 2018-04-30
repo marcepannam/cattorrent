@@ -1,3 +1,5 @@
+package net.atomshare.cattorrent.gui;
+
 import javax.swing.*;
 
 public class DownLabel {

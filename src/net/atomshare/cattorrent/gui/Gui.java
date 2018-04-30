@@ -1,5 +1,6 @@
-public class Gui {
+package net.atomshare.cattorrent.gui;
 
+public class Gui {
     public static void main(String args[]) {
         Window myWindow = new Window(600, 400);
         StandardButton buttonShowBunny = new StandardButton("pokaz kroliczka", 0, 0);

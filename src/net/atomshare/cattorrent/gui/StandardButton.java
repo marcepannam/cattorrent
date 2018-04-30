@@ -1,5 +1,8 @@
+package net.atomshare.cattorrent.gui;
+
 import javax.swing.JButton;
 import java.lang.String;
+
 
 public class StandardButton extends JButton{
 
