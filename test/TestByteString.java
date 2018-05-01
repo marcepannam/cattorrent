@@ -1,5 +1,5 @@
-package net.atomshare.cattorrent;
 
+import net.atomshare.cattorrent.ByteString;
 import org.junit.Test;
 
 import java.io.IOException;

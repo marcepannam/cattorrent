@@ -1,6 +1,6 @@
-package net.atomshare.cattorrent;
 
 import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+import net.atomshare.cattorrent.ByteString;
 import org.junit.Test;
 
 import java.io.*;
