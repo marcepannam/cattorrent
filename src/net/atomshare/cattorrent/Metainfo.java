@@ -18,6 +18,11 @@ public class Metainfo {
     private Path path;
     private ByteString announceUrl;
     private Map info;
+    private Integer pieceLength;
+    private Integer length;
+    private ByteString pieces;
+    private String name;
+
     //This constructor takes absolute path from gui,
     //locates file in the filesystem
     //and provides access to its contents
@@ -27,19 +32,51 @@ public class Metainfo {
         //assume that torrent file is correctly bencoded
         info = (Map) metainfo.get(new ByteString("info"));
         announceUrl = (ByteString) metainfo.get(new ByteString("announce"));
+        pieceLength = readPieceLength(info);
+        length = readLength(info);
+        pieces = readPieces(info);
+        name = readName(info);
     }
 
-    //this methods allows to access bencoded url of the tracker
-    public String getDecodedAnnounceUrl() throws IOException {
-        return (String) decode(announceUrl);
-    }
     //this methods allows to access utf-8 encoded url of the tracker
+    public String getDecodedAnnounceUrl() {
+        return announceUrl.toString();
+    }
+    //this methods allows to access bencoded url of the tracker
     public ByteString getAnnounceUrl() {
         return announceUrl;
     }
-    //this methods allows to access contents of the .torrent file
-    public Map getInfo() {
-        return info;
+    //this methods allow to access decoded contents of the .torrent file
+    public String getName() {
+        return name;
+    }
+    public Integer getLength() {
+        return length;
+    }
+    public Integer getPieceLength() {
+        return pieceLength;
+    }
+    //this method allows to access SHA1 hashes of the pieces in the .torrent file
+    public ByteString getPieces() {
+        return pieces;
+    }
+
+    private Integer readPieceLength(Map info) {
+        return (Integer) info.get(new ByteString("piece length"));
+    }
+    private Integer readLength(Map info) {
+        return (Integer) info.get(new ByteString("length"));
+    }
+    private ByteString readPieces(Map info) {
+        return (ByteString) info.get(new ByteString("pieces"));
+    }
+    private String readName (Map info) {
+        ByteString name = new ByteString("name");
+        if (info.containsKey(name)) {
+            return info.get(name).toString();
+        } else {
+            return "";
+        }
     }
 
     private Map readInfo(Path path){
