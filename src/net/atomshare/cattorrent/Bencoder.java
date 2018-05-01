@@ -151,6 +151,16 @@ public class Bencoder {
         return new ByteString(out.toByteArray());
     }
 
+    static byte[] encodeAsArray(Object o) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            encode(o, out);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return out.toByteArray();
+    }
+
     public static void main(String[] args)  {
 
     }
