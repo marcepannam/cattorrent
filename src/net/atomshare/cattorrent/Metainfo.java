@@ -4,9 +4,14 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import static net.atomshare.cattorrent.Bencoder.decode;
+import static net.atomshare.cattorrent.Bencoder.encode;
+import static net.atomshare.cattorrent.Bencoder.encodeAsArray;
 
 /**
  * This class digests information contained in the Metainfo file
@@ -59,6 +64,29 @@ public class Metainfo {
     //this method allows to access SHA1 hashes of the pieces in the .torrent file
     public ByteString getPieces() {
         return pieces;
+    }
+
+    public ByteString getInfo() {
+        return encode(info);
+    }
+
+    public String getInfoHash() throws IOException {
+        byte[] buff = new byte[20];
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-1");
+            md.update(encodeAsArray(info));
+            md.digest(buff, 0, buff.length);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException("Java does not recognize SHA-1 as algorithm.", e);
+        } catch (DigestException e) {
+            throw new IOException("Unable to create SHA-1 hash: ", e);
+        }
+        StringBuilder infoHash = new StringBuilder();
+        for (byte b : buff) {
+            infoHash.append(String.format("%02X", b));
+        }
+        return infoHash.toString();
     }
 
     private Integer readPieceLength(Map info) {
