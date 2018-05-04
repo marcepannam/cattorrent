@@ -16,7 +16,6 @@ import static java.lang.Character.toUpperCase;
  * tracker basing on the data from torrent file
  */
 public class TrackerRequest {
-    private static final Set<Character> normalCharacters = buildNormalCharacters();
     private static final String clientVersion = "-CA0001-";
     private static final String clientId = computeClientId();
     public enum Event { STARTED, STOPPED, COMPLETED }
@@ -133,6 +132,19 @@ public class TrackerRequest {
                 throw new IllegalArgumentException("Bad or no event specified.");
         }
     }
+
+    public static String urlEncode(byte[] buff) {
+        StringBuilder url = new StringBuilder();
+        for (byte b: buff) {
+            if (isAllowed(b)) {
+                url.append(String.format("%c", b));
+            } else {
+                url.append("%");
+                url.append(String.format("%02X", b));
+            }
+        }
+        return url.toString();
+    }
     private static String computeClientId() {
         SecureRandom random = new SecureRandom();
         byte[] peerId = new byte[20];
@@ -144,34 +156,9 @@ public class TrackerRequest {
         System.arraycopy(stringBuilder.toString().getBytes(),0, peerId, 8, 12);
         return new String(peerId);
     }
-    private static String urlEncode(byte[] buff) throws MalformedURLException {
-        StringBuilder url = new StringBuilder();
-        for (byte b: buff) {
-            char c = (char) b;
-            if (normalCharacters.contains(c)) {
-                url.append(toUpperCase(c));
-            } else {
-                url.append("%");
-                url.append(String.format("%02X", b));
-            }
-        }
-        return url.toString();
-    }
-    private static HashSet<Character> buildNormalCharacters() {
-        HashSet<Character> normalCharacters = new HashSet<>();
-        for (char c = 'a'; c <='z'; c++){
-            normalCharacters.add(c);
-        }
-        for (char c = 'A'; c <='Z'; c++){
-            normalCharacters.add(c);
-        }
-        for (char c = '0'; c <='9'; c++) {
-            normalCharacters.add(c);
-        }
-        normalCharacters.add('.');
-        normalCharacters.add('-');
-        normalCharacters.add('_');
-        normalCharacters.add('~');
-        return normalCharacters;
+    private static boolean isAllowed(byte b) {
+        //0-9, a-z, A-Z, ., -, _, ~ ASCII
+        return (b >= 48 && b <= 57) || (b >= 65 && b <= 90) ||
+                (b >= 97 && b <= 122) || b == 45 || b == 46 || b == 95 || b == 126;
     }
 }

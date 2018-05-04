@@ -3,13 +3,8 @@ import static org.junit.Assert.*;
 import net.atomshare.cattorrent.Metainfo;
 import net.atomshare.cattorrent.TrackerRequest;
 import org.junit.Test;
-import org.junit.internal.runners.statements.Fail;
-
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
-import java.net.URISyntaxException;
 
 public class TrackerRequestTest {
     @Test
@@ -29,5 +24,11 @@ public class TrackerRequestTest {
             fail("Unable to build url");
         }
     }
-
+    @Test
+    public void urlEncodingTest() {
+        byte[] b2 = {0x12, 0x34, 0x56, 0x78, (byte) 0x9a,
+                (byte) 0xbc, (byte) 0xde, (byte) 0xf1, 0x23, 0x45, 0x67, (byte) 0x89, (byte)0xab,
+                (byte)0xcd, (byte)0xef, 0x12, 0x34, 0x56, 0x78, (byte)0x9a};
+        assertEquals("%124Vx%9A%BC%DE%F1%23Eg%89%AB%CD%EF%124Vx%9A",TrackerRequest.urlEncode(b2));
+    }
 }
