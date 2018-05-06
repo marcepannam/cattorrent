@@ -2,10 +2,7 @@ package net.atomshare.cattorrent;
 
 import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
@@ -29,10 +26,38 @@ public class Downloader {
 
         public static int CHOKE = 0;
         public static int UNCHOKE = 1;
+        public static int INTERESTED = 2;
+        public static int NOT_INTERESTED = 3;
+
+        // new pieces of file is avalible
+        public static int HAVE = 4;
+
+        // bitmask of avalible pieces
+        public static int BITFIELD = 5;
+
+        //used to request a block
+        public static int REQUEST = 6;
+
+        public static int PIECE = 7;
+
+        //used to cancel block requests
+        public static int CANCEL = 8;
+
+        public static int PORT = 9;
+
 
         public String toString() {
             return this.length+ " "+ this.kind+" "+ new ByteString(this.body);
         }
+    }
+
+    public void sendRequest(int piece, int begin, int length) throws IOException {
+        DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+        out.writeInt(13);
+        out.writeByte(Message.REQUEST);
+        out.writeInt(piece);
+        out.writeInt(begin);
+        out.writeInt(length);
     }
 
     public Message readMessage() throws IOException {
@@ -40,16 +65,8 @@ public class Downloader {
         DataInputStream in = new DataInputStream(socket.getInputStream());
         int length = in.readInt();
         int kind = (int)in.readByte();
-
-        System.out.println(length);
-        System.out.println(kind);
-
         byte[] bytes = new byte[length-1];
-
         in.readFully(bytes);
-        System.out.println("new  mssgr");
-
-
         Message message = new Message();
 
         message.length = length;
