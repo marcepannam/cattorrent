@@ -3,6 +3,12 @@ import java.io.*;
 import java.util.*;
 import static java.lang.Character.isDigit;
 
+/**
+  *Bencoding implements way to organize data in torrent files.
+  *It supports strings, integers, lists, dictionaries.
+*/
+
+
 public class Bencoder {
 
     public static InputStream input(String name) throws  FileNotFoundException{

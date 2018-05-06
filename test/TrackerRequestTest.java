@@ -9,13 +9,13 @@ import java.net.URL;
 public class TrackerRequestTest {
     @Test
     public void ClientIdTest() {
-        Metainfo met = new Metainfo("/home/guzik/Moje/TCS/II_semestr/Obiektowe/Projekt/lorem.txt.torrent");
+        Metainfo met = new Metainfo("tmp/lorem.txt.torrent");
         TrackerRequest tr = new TrackerRequest(met, TrackerRequest.Event.STARTED);
         assertEquals(tr.getPeerId(), tr.getPeerId());
     }
     @Test
     public void baseUrlBuilderTest() throws IOException {
-        Metainfo met = new Metainfo("/home/guzik/Moje/TCS/II_semestr/Obiektowe/Projekt/lorem.txt.torrent");
+        Metainfo met = new Metainfo("tmp/lorem.txt.torrent");
         TrackerRequest tr = new TrackerRequest(met, TrackerRequest.Event.STARTED);
         System.out.println(tr.buildBaseUrl());
         try {

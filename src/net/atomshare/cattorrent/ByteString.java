@@ -3,6 +3,12 @@ package net.atomshare.cattorrent;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+/**
+ * Class which supports storage of byte strings.
+ * The class is better than byte array, because it supports
+ * comparasion.
+ */
+
 public class ByteString implements Comparable<ByteString> {
     // https://ideone.com/edCdbc
     private byte[] data;

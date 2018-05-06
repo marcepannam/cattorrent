@@ -15,6 +15,7 @@ import static java.lang.Character.toUpperCase;
  * This class constructs message that is sent to
  * tracker basing on the data from torrent file
  */
+
 public class TrackerRequest {
     private static final String clientVersion = "-CA0001-";
     private static final String clientId = computeClientId();
@@ -40,7 +41,7 @@ public class TrackerRequest {
         try {
             baseUrlBuilder.append(metainfo.getDecodedAnnounceUrl());
             baseUrlBuilder.append("?info_hash=");
-            baseUrlBuilder.append(urlEncode(metainfo.computeInfoHash()));
+            baseUrlBuilder.append(urlEncode(metainfo.getInfoHash()));
             baseUrlBuilder.append("&peer_id=");
             baseUrlBuilder.append(getPeerId());
             baseUrlBuilder.append("&port=");

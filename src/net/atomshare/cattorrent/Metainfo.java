@@ -19,7 +19,7 @@ import static net.atomshare.cattorrent.Bencoder.encodeAsArray;
  * and presents it in an easily accessible manner
  */
 
-public class Metainfo {
+public class  Metainfo {
     private Path path;
     private ByteString announceUrl;
     private Map info;
@@ -70,7 +70,7 @@ public class Metainfo {
         return encode(info);
     }
 
-    public String getInfoHash() throws IOException {
+    public byte[] getInfoHash() throws IOException {
         byte[] buff = new byte[20];
         MessageDigest md;
         try {
@@ -82,11 +82,7 @@ public class Metainfo {
         } catch (DigestException e) {
             throw new IOException("Unable to create SHA-1 hash: ", e);
         }
-        StringBuilder infoHash = new StringBuilder();
-        for (byte b : buff) {
-            infoHash.append(String.format("%02X", b));
-        }
-        return infoHash.toString();
+        return buff;
     }
 
     private Integer readPieceLength(Map info) {
