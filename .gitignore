@@ -23,5 +23,6 @@ hs_err_pid*
 
 #moje do zignorowania
 tmp
-.idea
+.idea/
 out/
+

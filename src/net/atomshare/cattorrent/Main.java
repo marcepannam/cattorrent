@@ -9,5 +9,6 @@ public class Main{
         Metainfo metainfo = new Metainfo(args[0]);
         Downloader d = new Downloader(metainfo);
         d.init();
+        d.readMessage();
     }
 }

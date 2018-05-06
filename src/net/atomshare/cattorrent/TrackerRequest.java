@@ -18,7 +18,7 @@ import static java.lang.Character.toUpperCase;
 
 public class TrackerRequest {
     private static final String clientVersion = "-CA0001-";
-    private static final String clientId = computeClientId();
+    public static final String clientId = computeClientId();
     public enum Event { STARTED, STOPPED, COMPLETED }
     private Event event;
     private int numWant;
