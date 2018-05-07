@@ -1,6 +1,5 @@
-package net.atomshare.cattorrent.gui;
-
 import javax.swing.*;
+import java.awt.*;
 
 public class DownLabel {
     private JLabel myLabel;
@@ -8,6 +7,7 @@ public class DownLabel {
     DownLabel(){
         myLabel = new JLabel("terminal");
         myLabel.setBounds(0, 200, 600, 100);
+        myLabel.setForeground(Color.BLUE);
     }
 
     JLabel getMyLabel(){return myLabel;}

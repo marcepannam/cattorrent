@@ -1,4 +1,3 @@
-package net.atomshare.cattorrent.gui;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -9,7 +8,10 @@ public class Window extends JFrame implements ActionListener{
 
     private JFrame myWindow;
     private JLabel downLabel;
+    private int howManyTimesDispose = 0;
     private ArrayList<StandardButton> buttons ;
+    private ArrayList<StandardTextField> textFields;
+    private StringBuilder toWriteOut = new StringBuilder();
 
     public Window(int lenght, int width){
           myWindow = new JFrame();
@@ -18,6 +20,7 @@ public class Window extends JFrame implements ActionListener{
           myWindow.setLayout(null);
           myWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
           buttons = new ArrayList<>();
+          textFields = new ArrayList<>();
      }
 
     public void addButton(StandardButton toAdd){
@@ -29,6 +32,11 @@ public class Window extends JFrame implements ActionListener{
     public void addLabel(DownLabel toAdd){
          myWindow.add(toAdd.getMyLabel());
          downLabel = toAdd.getMyLabel();
+    }
+
+    public void addTextField(StandardTextField toAdd){
+        myWindow.add(toAdd.getMyTextField());
+        textFields.add(toAdd);
     }
 
     public void makeVisible(){
@@ -48,15 +56,41 @@ public class Window extends JFrame implements ActionListener{
         System.out.println(numberOfButton);
         switch (numberOfButton){
             case 0:{
-                StringBuilder bunny = new StringBuilder();
-                bunny.append("BUNNY\n");
-                downLabel.setText(bunny.toString());
+                if(toWriteOut.length() == 0){
+                    toWriteOut.append("<html>(\\ /)<br>(o.O)<br>(^ ^)<br><br></html>");
+                }else{
+                    toWriteOut.delete(toWriteOut.length() - 7, toWriteOut.length());
+                    toWriteOut.append("(\\ /)<br>(o.O)<br>(^ ^)<br><br></html>");
+                }
+                downLabel.setText(toWriteOut.toString());
                 break;
             }
 
             case 1:{
-                System.out.println("powinno sie wylaczyc");
-                myWindow.dispose();
+                System.out.println("powinno sie wylonczyc");
+                for(int i = 0; i <= howManyTimesDispose; i++) {
+                    System.out.println("wylaczam");
+                    myWindow.dispose();
+                }
+                break;
+            }
+
+            case 2:{
+                System.out.println("powinno wyskoczyc okno");
+                StandardTextField beShown = new StandardTextField("special", 0, 100);
+                StandardButton takeInfoButton = new StandardButton("take info", 0, 150);
+                addButton(takeInfoButton);
+                addTextField(beShown);
+                makeVisible();
+                howManyTimesDispose++;
+                break;
+            }
+
+            case 3:{
+                System.out.println("klikniete nowe okno");
+                String info;
+                info = textFields.get(1).getMyTextField().getText();
+                downLabel.setText(info);
                 break;
             }
 
