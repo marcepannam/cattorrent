@@ -1,12 +1,12 @@
 package net.atomshare.cattorrent;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-
 import java.io.*;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Map;
+
+import static net.atomshare.cattorrent.Downloader.Message.PIECE;
 
 /**
  * Downloader downloads data from a connected peer.
@@ -20,8 +20,9 @@ public class Downloader {
     }
 
     public static class Message {
-        public int length;
         public int kind;
+        public int index;
+        public int begin;
         public byte[] body;
 
         public static int CHOKE = 0;
@@ -45,9 +46,11 @@ public class Downloader {
 
         public static int PORT = 9;
 
-
         public String toString() {
-            return this.length+ " "+ this.kind+" "+ new ByteString(this.body);
+            if (this.body != null) {
+                return this.kind + " " + new ByteString(this.body);
+            }
+            return this.kind + " null";
         }
     }
 
@@ -65,15 +68,19 @@ public class Downloader {
         DataInputStream in = new DataInputStream(socket.getInputStream());
         int length = in.readInt();
         int kind = (int)in.readByte();
-        byte[] bytes = new byte[length-1];
-        in.readFully(bytes);
+
         Message message = new Message();
-
-        message.length = length;
         message.kind = kind;
-        message.body = bytes;
 
-        System.out.println(message.toString());
+        if (kind == PIECE) {
+            message.index = in.readInt();
+            message.begin = in.readInt();
+            message.body = new byte[length - 1 - 8];
+            in.readFully(message.body);
+        } else {
+            byte[] bytes = new byte[length - 1];
+            in.readFully(bytes);
+        }
 
         return message;
     }

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Map;
 
 import static net.atomshare.cattorrent.Bencoder.decode;
@@ -62,8 +63,11 @@ public class  Metainfo {
         return pieceLength;
     }
     //this method allows to access SHA1 hashes of the pieces in the .torrent file
-    public ByteString getPieces() {
+    public ByteString getPieceHashes() {
         return pieces;
+    }
+    public ByteString getPieceHash(int i) {
+        return new ByteString(Arrays.copyOfRange(pieces.getBytes(), i * Utils.SHA1_BYTES,(i+1) * Utils.SHA1_BYTES));
     }
 
     public ByteString getInfo() {
