@@ -6,7 +6,8 @@ public class DownLabel {
 
     DownLabel(){
         myLabel = new JLabel("terminal");
-        myLabel.setBounds(0, 200, 600, 100);
+        myLabel.setBounds(0, 250, 600, 120);
+        myLabel.setBackground(Color.CYAN);
         myLabel.setForeground(Color.BLUE);
     }
 
