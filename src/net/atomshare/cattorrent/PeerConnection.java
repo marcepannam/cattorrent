@@ -3,9 +3,12 @@ package net.atomshare.cattorrent;
 import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
+import static net.atomshare.cattorrent.PeerConnection.Message.BITFIELD;
+import static net.atomshare.cattorrent.PeerConnection.Message.HAVE;
 import static net.atomshare.cattorrent.PeerConnection.Message.PIECE;
 
 /**
@@ -15,8 +18,16 @@ public class PeerConnection {
     private Metainfo metainfo;
     private Socket socket;
 
+    /**
+     * Which pieces this peer has?
+     */
+    private ArrayList<Boolean> hasPieces;
+
     public PeerConnection(Metainfo metainfo) throws IOException {
         this.metainfo = metainfo;
+        hasPieces = new ArrayList<>();
+        for (int i=0; i < metainfo.getPieceCount(); i ++)
+            hasPieces.add(false);
     }
 
     public static class Message {
@@ -55,6 +66,10 @@ public class PeerConnection {
     }
 
     public void sendRequest(int piece, int begin, int length) throws IOException {
+        // if (!hasPieces.get(piece)) {
+        //     throw new IOException("peer doesn't have this piece");
+        // }
+
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         out.writeInt(13);
         out.writeByte(Message.REQUEST);
@@ -64,7 +79,6 @@ public class PeerConnection {
     }
 
     public Message readMessage() throws IOException {
-
         DataInputStream in = new DataInputStream(socket.getInputStream());
         int length = in.readInt();
         int kind = (int)in.readByte();
@@ -77,6 +91,17 @@ public class PeerConnection {
             message.begin = in.readInt();
             message.body = new byte[length - 1 - 8];
             in.readFully(message.body);
+        } else if (kind == BITFIELD) {
+            byte[] mask = new byte[length - 1];
+            in.readFully(mask);
+            for (int i = 0; i < hasPieces.size(); i++) {
+                if (((mask[i / 8] >> (i % 8))&1) != 0) {
+                    hasPieces.set(i, true);
+                }
+            }
+        } else if (kind == HAVE) {
+            int piece = in.readInt();
+            hasPieces.set(piece, true);
         } else {
             byte[] bytes = new byte[length - 1];
             in.readFully(bytes);
@@ -125,6 +150,5 @@ public class PeerConnection {
         b = new byte[20];
         in.readFully(b);
         System.out.println("peer client id: " + new ByteString(b));
-
     }
 }

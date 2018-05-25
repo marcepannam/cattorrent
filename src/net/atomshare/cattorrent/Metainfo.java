@@ -123,4 +123,8 @@ public class  Metainfo {
             return null;
         }
     }
+
+    public int getPieceCount() {
+        return (getLength() + getPieceLength() - 1) / getPieceLength();
+    }
 }
