@@ -19,10 +19,22 @@ public class Controller {
         try  {
             Metainfo met = new Metainfo(file.getAbsolutePath());
             progressBar.setValue(0);
-            downloaders.add(new Downloader(met, logArea, p -> SwingUtilities.invokeLater(() -> {
-                progressBar.setValue(Math.round((1-p)*100));
-                progressBar.validate();
-            })));
+            downloaders.add(new Downloader(met, new Downloader.DownloadProgressListener() {
+                @Override
+                public void onProgress(float p) {
+                    SwingUtilities.invokeLater(() -> {
+                        progressBar.setValue(Math.round((1 - p) * 100));
+                        progressBar.validate();
+                    });
+                }
+
+                @Override
+                public void onLog(String message) {
+                    SwingUtilities.invokeLater(() -> {
+                        Gui.logEvent(logArea, message);
+                    });
+                }
+            }));
         } catch (IOException e) {
             System.out.println("Error occurred while opening the file:");
             System.out.println(e.getMessage());

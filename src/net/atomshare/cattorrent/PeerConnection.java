@@ -11,7 +11,7 @@ import java.util.Map;
 import static net.atomshare.cattorrent.PeerConnection.Message.BITFIELD;
 import static net.atomshare.cattorrent.PeerConnection.Message.HAVE;
 import static net.atomshare.cattorrent.PeerConnection.Message.PIECE;
-import static net.atomshare.cattorrent.gui.Gui.logEvent;
+import static net.atomshare.cattorrent.PeerConnection.Message.*;
 
 /**
  * PeerConnection downloads data from a connected peer.
@@ -25,8 +25,18 @@ public class PeerConnection {
      */
     private ArrayList<Boolean> hasPieces;
 
-    public PeerConnection(Metainfo metainfo) throws IOException {
+    /**
+     * Are we chocked?
+     */
+    private boolean choked = true;
+
+    private byte[] peerInfo;
+    private Downloader.DownloadProgressListener listener;
+
+    public PeerConnection(Metainfo metainfo, byte[] peerInfo, Downloader.DownloadProgressListener listener) throws IOException {
         this.metainfo = metainfo;
+        this.peerInfo = peerInfo;
+        this.listener = listener;
         hasPieces = new ArrayList<>();
         for (int i=0; i < metainfo.getPieceCount(); i ++)
             hasPieces.add(false);
@@ -88,6 +98,7 @@ public class PeerConnection {
         Message message = new Message();
         message.kind = kind;
 
+        System.err.println("message: " +  kind);
         if (kind == PIECE) {
             message.index = in.readInt();
             message.begin = in.readInt();
@@ -104,6 +115,10 @@ public class PeerConnection {
         } else if (kind == HAVE) {
             int piece = in.readInt();
             hasPieces.set(piece, true);
+        } else if (kind == CHOKE) {
+            choked = true;
+        } else if (kind == UNCHOKE) {
+            choked = false;
         } else {
             byte[] bytes = new byte[length - 1];
             in.readFully(bytes);
@@ -112,25 +127,24 @@ public class PeerConnection {
         return message;
     }
 
-    public void init(JLabel logArea) throws IOException {
+    public void init() throws IOException {
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
-        logEvent(logArea, "Connecting with the tracker at " + metainfo.getDecodedAnnounceUrl());
+        listener.onLog("Connecting with the tracker at " + metainfo.getDecodedAnnounceUrl());
         URL url = new URL(tracker_request.buildBaseUrl());
         byte[] trackerData = TrackerResponse.get(url);
         Object trackerResp = Bencoder.decode(trackerData);
-        logEvent(logArea, "Parsing tracker response...");
+        listener.onLog("Parsing tracker response...");
 
-        ByteString peers = (ByteString)((Map<Object,Object>)trackerResp).get(new ByteString("peers"));
 
-        byte[] peersArray = peers.getBytes();
-        String ipAddress = Byte.toUnsignedInt(peersArray[0]) + "." + Byte.toUnsignedInt(peersArray[1])
-                + "." + Byte.toUnsignedInt(peersArray[2]) + "." + Byte.toUnsignedInt(peersArray[3]);
-        int port = peersArray[5] + peersArray[4] * 256;
+
+        String ipAddress = Byte.toUnsignedInt(peerInfo[0]) + "." + Byte.toUnsignedInt(peerInfo[1])
+                + "." + Byte.toUnsignedInt(peerInfo[2]) + "." + Byte.toUnsignedInt(peerInfo[3]);
+        int port = Byte.toUnsignedInt(peerInfo[5]) + Byte.toUnsignedInt(peerInfo[4]) * 256;
         System.out.println(ipAddress + " "  + port);
 
         socket = new Socket(ipAddress, port);
         System.out.println("connected");
-        logEvent(logArea, "Connected to peer " + ipAddress + " at port "  + port);
+        listener.onLog("Connected to peer " + ipAddress + " at port "  + port);
 
         // write handshake
         OutputStream out = socket.getOutputStream();
@@ -155,6 +169,11 @@ public class PeerConnection {
         b = new byte[20];
         in.readFully(b);
         System.out.println("peer client id: " + new ByteString(b));
-        logEvent(logArea, "Peer client id: " + new ByteString(b));
+
+        // write "Interested" status
+        DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
+        dout.writeInt(1);
+        dout.writeByte(Message.INTERESTED);
+        dout.flush();
     }
 }
