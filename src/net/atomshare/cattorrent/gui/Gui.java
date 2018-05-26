@@ -1,20 +1,33 @@
 package net.atomshare.cattorrent.gui;
 
 import net.atomshare.cattorrent.Controller;
+import net.atomshare.cattorrent.Downloader;
 
 import java.io.File;
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class Gui {
 
-    public static void main(String args[]) {
-        SwingUtilities.invokeLater(Gui::createAndShowGUI);
+    public static void main(String args[]) throws InterruptedException, IOException {
+        Controller c = new Controller();
+        SwingUtilities.invokeLater(() -> createAndShowGUI(c));
+        while (true) {
+            boolean started = false;
+            TimeUnit.SECONDS.sleep(1);
+            for (Downloader d : c.downloaders) {
+                started = true;
+                d.run();
+            }
+            if (started) break;
+        }
     }
 
-    public static void createAndShowGUI() {
+    public static void createAndShowGUI(Controller c) {
         JFrame myWindow = new JFrame();
         ArrayList<File> files = new ArrayList<>();
         myWindow.setSize(600, 400);
@@ -23,14 +36,15 @@ public class Gui {
         myWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JLabel logArea = createLog(myWindow);
         createMenu(myWindow, logArea, files);
-        createDownloadButton(myWindow, logArea, files);
+        createDownloadButton(myWindow, logArea, files, c);
         myWindow.setVisible(true);
     }
 
     public static void logEvent(JLabel logArea, String msg){
         StringBuilder sb = new StringBuilder(logArea.getText());
         sb.insert(6, Instant.now() + " " + msg + "<br/>");
-        logArea.setText(sb.toString());
+        String logMsg = sb.toString();
+        SwingUtilities.invokeLater(() -> logArea.setText(logMsg));
     }
 
     private static void createMenu(JFrame myWindow, JLabel logArea, ArrayList<File> files) {
@@ -85,7 +99,7 @@ public class Gui {
         return logArea;
     }
 
-    private static void createDownloadButton(JFrame myWindow, JLabel logArea, ArrayList<File> files) {
+    private static void createDownloadButton(JFrame myWindow, JLabel logArea, ArrayList<File> files, Controller c) {
         JButton buttonDownloadFile = new JButton("Download");
         buttonDownloadFile.setBounds(0, 50, 140, 20);
         JPanel downloadsPanel = new JPanel();
@@ -109,7 +123,7 @@ public class Gui {
             fileDownload.add(fileNameLabel, BorderLayout.WEST);
             downloadsPanel.add(fileDownload);
             downloadsPanel.validate();
-            Controller.startDownload(files.get(files.size()-1), progressBar);
+            c.startDownload(files.get(files.size()-1), progressBar, logArea);
         });
     }
 }

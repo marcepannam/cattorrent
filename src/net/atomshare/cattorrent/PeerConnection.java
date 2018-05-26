@@ -1,5 +1,6 @@
 package net.atomshare.cattorrent;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 import java.net.URL;
@@ -10,6 +11,7 @@ import java.util.Map;
 import static net.atomshare.cattorrent.PeerConnection.Message.BITFIELD;
 import static net.atomshare.cattorrent.PeerConnection.Message.HAVE;
 import static net.atomshare.cattorrent.PeerConnection.Message.PIECE;
+import static net.atomshare.cattorrent.gui.Gui.logEvent;
 
 /**
  * PeerConnection downloads data from a connected peer.
@@ -110,11 +112,13 @@ public class PeerConnection {
         return message;
     }
 
-    public void init() throws IOException {
+    public void init(JLabel logArea) throws IOException {
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
+        logEvent(logArea, "Connecting with the tracker at " + metainfo.getDecodedAnnounceUrl());
         URL url = new URL(tracker_request.buildBaseUrl());
         byte[] trackerData = TrackerResponse.get(url);
         Object trackerResp = Bencoder.decode(trackerData);
+        logEvent(logArea, "Parsing tracker response...");
 
         ByteString peers = (ByteString)((Map<Object,Object>)trackerResp).get(new ByteString("peers"));
 
@@ -126,6 +130,7 @@ public class PeerConnection {
 
         socket = new Socket(ipAddress, port);
         System.out.println("connected");
+        logEvent(logArea, "Connected to peer " + ipAddress + " at port "  + port);
 
         // write handshake
         OutputStream out = socket.getOutputStream();
@@ -150,5 +155,6 @@ public class PeerConnection {
         b = new byte[20];
         in.readFully(b);
         System.out.println("peer client id: " + new ByteString(b));
+        logEvent(logArea, "Peer client id: " + new ByteString(b));
     }
 }

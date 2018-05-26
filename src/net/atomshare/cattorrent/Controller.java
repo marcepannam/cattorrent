@@ -1,15 +1,28 @@
 package net.atomshare.cattorrent;
 
+import net.atomshare.cattorrent.gui.Gui;
+
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Controller {
-    public static void startDownload(File file, JProgressBar progressBar) {
+    public List<Downloader> downloaders;
+
+    public Controller() {
+        this.downloaders = new ArrayList<>();
+        }
+
+    public void startDownload(File file, JProgressBar progressBar, JLabel logArea) {
         try  {
             Metainfo met = new Metainfo(file.getAbsolutePath());
             progressBar.setValue(0);
-            Downloader d = new Downloader(met, p -> SwingUtilities.invokeLater(() -> progressBar.setValue(Math.round(p))));
+            downloaders.add(new Downloader(met, logArea, p -> SwingUtilities.invokeLater(() -> {
+                progressBar.setValue(Math.round((1-p)*100));
+                progressBar.validate();
+            })));
         } catch (IOException e) {
             System.out.println("Error occurred while opening the file:");
             System.out.println(e.getMessage());

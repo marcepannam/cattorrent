@@ -1,5 +1,6 @@
 package net.atomshare.cattorrent;
 
+import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
@@ -18,21 +19,25 @@ public class Downloader {
         void onProgress(float p);
     }
 
-    public Downloader(Metainfo metainfo, DownloadProgressListener listener) {
+    public Downloader(Metainfo metainfo, JLabel logArea, DownloadProgressListener listener) {
         this.metainfo = metainfo;
         this.listener = listener;
+        this.logArea = logArea;
     }
 
     public static void main(String[] args) throws IOException {
         // code only for testing, will be refactored later
+        //There must be logArea passed as argument to run method and I don't wanna provide one here
+        /*
         Metainfo metainfo = new Metainfo(args[0]);
-        Downloader d = new Downloader(metainfo, p -> System.out.println("progress: " + p));
+        //Downloader d = new Downloader(metainfo, p -> System.out.println("progress: " + p));
         d.run();
-        d.saveToFile("a.txt");
+        d.saveToFile("a.txt");*/
     }
 
     private DownloadProgressListener listener;
     private Metainfo metainfo;
+    private JLabel logArea;
     private List<List<ByteString>> pieces = new ArrayList<>();
     private int chunksLeft = 0;
     private int allChunkCount = 0;
@@ -45,7 +50,7 @@ public class Downloader {
      */
     public void run() throws IOException {
         peerConnection = new PeerConnection(metainfo);
-        peerConnection.init();
+        peerConnection.init(logArea);
 
         initChunks();
 
@@ -58,7 +63,7 @@ public class Downloader {
             if (msg.kind == PeerConnection.Message.PIECE) {
                 pieces.get(msg.index).set(msg.begin/CHUNK_LENGTH, new ByteString(msg.body));
                 chunksLeft --;
-                listener.onProgress((float)chunksLeft / allChunkCount);
+                listener.onProgress((float) chunksLeft / allChunkCount);
                 if(chunksLeft == 0) break;
             } else {
                 System.out.println("Sth else");
