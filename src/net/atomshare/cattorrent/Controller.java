@@ -9,7 +9,7 @@ public class Controller {
         try  {
             Metainfo met = new Metainfo(file.getAbsolutePath());
             progressBar.setValue(0);
-            Downloader d = new Downloader(met, p -> progressBar.setValue(Math.round(p)));
+            Downloader d = new Downloader(met, p -> SwingUtilities.invokeLater(() -> progressBar.setValue(Math.round(p))));
         } catch (IOException e) {
             System.out.println("Error occurred while opening the file:");
             System.out.println(e.getMessage());

@@ -5,11 +5,35 @@ import net.atomshare.cattorrent.Controller;
 import java.io.File;
 import javax.swing.*;
 import java.awt.*;
+import java.time.Instant;
 import java.util.ArrayList;
 
 public class Gui {
 
-    public static void createMenu(JFrame myWindow, JLabel logArea, ArrayList<File> files) {
+    public static void main(String args[]) {
+        SwingUtilities.invokeLater(Gui::createAndShowGUI);
+    }
+
+    public static void createAndShowGUI() {
+        JFrame myWindow = new JFrame();
+        ArrayList<File> files = new ArrayList<>();
+        myWindow.setSize(600, 400);
+        myWindow.setTitle("Cattorrent");
+        myWindow.setLayout(null);
+        myWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JLabel logArea = createLog(myWindow);
+        createMenu(myWindow, logArea, files);
+        createDownloadButton(myWindow, logArea, files);
+        myWindow.setVisible(true);
+    }
+
+    public static void logEvent(JLabel logArea, String msg){
+        StringBuilder sb = new StringBuilder(logArea.getText());
+        sb.insert(6, Instant.now() + " " + msg + "<br/>");
+        logArea.setText(sb.toString());
+    }
+
+    private static void createMenu(JFrame myWindow, JLabel logArea, ArrayList<File> files) {
         //create a menu bar
         JMenuBar menuBar = new JMenuBar();
 
@@ -27,68 +51,65 @@ public class Gui {
             int option = fileChooser.showOpenDialog(new JButton());
             switch (option) {
                 case (JFileChooser.APPROVE_OPTION) :
-                    logArea.setText("<html>Opening file: " +
-                            fileChooser.getSelectedFile().getAbsolutePath()+"<br/></html>");
-                    System.out.println("Opening file: " +
+                    logEvent(logArea, " File for download: " +
                             fileChooser.getSelectedFile().getName());
                     files.add(fileChooser.getSelectedFile());
                     break;
                 case (JFileChooser.CANCEL_OPTION) :
                     break;
                 case (JFileChooser.ERROR_OPTION) :
-                    logArea.setText("<html>Error occurred while choosing a file<br/></html>");
+                    logEvent(logArea, "Error occurred while choosing a file.");
                     break;
             }
         });
-        //openMenuItem.setActionCommand("New");
         fileMenu.add(openMenuItem);
         menuBar.add(fileMenu);
         menuBar.add(aboutMenu);
         myWindow.setJMenuBar(menuBar);
     }
 
-    public static JLabel createLog(JFrame myWindow) {
-        JLabel log = new JLabel("Log");
-        log.setBounds(0, 200, 50, 50);
-        myWindow.add(log);
-
+    private static JLabel createLog(JFrame myWindow) {
+        JPanel logPanel = new JPanel(new BorderLayout());
+        logPanel.setBounds(0, 250, 600, 100);
+        logPanel.add(new JLabel("Event log"), BorderLayout.NORTH);
         JLabel logArea = new JLabel();
-        logArea.setBounds(0, 250, 600, 120);
         logArea.setOpaque(true);
         logArea.setBackground(Color.BLACK);
         logArea.setForeground(Color.WHITE);
-        myWindow.add(logArea);
+        logArea.setVerticalAlignment(JLabel.TOP);
+        logArea.setText("<html></html>");
+        JScrollPane scrollPane = new JScrollPane(logArea,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        logPanel.add(scrollPane, BorderLayout.CENTER);
+        myWindow.add(logPanel);
         return logArea;
     }
 
-    public static void createDownloadButton(JFrame myWindow, ArrayList<File> files) {
+    private static void createDownloadButton(JFrame myWindow, JLabel logArea, ArrayList<File> files) {
         JButton buttonDownloadFile = new JButton("Download");
-        buttonDownloadFile.setBounds(0, 50, 100, 20);
+        buttonDownloadFile.setBounds(0, 50, 140, 20);
+        JPanel downloadsPanel = new JPanel();
+        downloadsPanel.setLayout(new BoxLayout(downloadsPanel, BoxLayout.PAGE_AXIS));
+        downloadsPanel.setBackground(Color.LIGHT_GRAY);
+        downloadsPanel.setBounds(0, 70, 600, 180);
+        myWindow.add(downloadsPanel);
+        myWindow.add(buttonDownloadFile, BorderLayout.NORTH);
         buttonDownloadFile.addActionListener( actionEvent -> {
             JProgressBar progressBar = new JProgressBar(0, 100);
-            progressBar.setBounds(50, 150, 100, 20);
             progressBar.setValue(0);
             progressBar.setStringPainted(true);
-            JLabel fileNameLabel = new JLabel(files.get(0).getName());
-            fileNameLabel.setBounds(0, 150, 50, 20);
-            myWindow.add(fileNameLabel);
-            myWindow.add(progressBar);
-            myWindow.repaint();
-            Controller.startDownload(files.get(0), progressBar);
+            if (files.isEmpty()) {
+                logEvent(logArea,"There is no file for download");
+                return;
+            }
+            JLabel fileNameLabel = new JLabel(files.get(files.size()-1).getName());
+            JPanel fileDownload = new JPanel(new BorderLayout());
+            fileDownload.setMaximumSize(new Dimension(300, 30));
+            fileDownload.add(progressBar, BorderLayout.EAST);
+            fileDownload.add(fileNameLabel, BorderLayout.WEST);
+            downloadsPanel.add(fileDownload);
+            downloadsPanel.validate();
+            Controller.startDownload(files.get(files.size()-1), progressBar);
         });
-        myWindow.add(buttonDownloadFile);
-    }
-
-    public static void main(String args[]) {
-        JFrame myWindow = new JFrame();
-        ArrayList<File> files = new ArrayList<>();
-        myWindow.setSize(600, 400);
-        myWindow.setTitle("Cattorrent");
-        myWindow.setLayout(null);
-        myWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        JLabel logArea = createLog(myWindow);
-        createMenu(myWindow, logArea, files);
-        createDownloadButton(myWindow, files);
-        myWindow.setVisible(true);
     }
 }
