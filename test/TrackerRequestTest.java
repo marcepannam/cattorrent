@@ -8,7 +8,7 @@ import java.net.URL;
 
 public class TrackerRequestTest {
     @Test
-    public void ClientIdTest() {
+    public void ClientIdTest() throws IOException {
         Metainfo met = new Metainfo("tmp/lorem.txt.torrent");
         TrackerRequest tr = new TrackerRequest(met, TrackerRequest.Event.STARTED);
         assertEquals(tr.getPeerId(), tr.getPeerId());

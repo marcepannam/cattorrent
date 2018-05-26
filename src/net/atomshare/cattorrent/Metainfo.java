@@ -1,5 +1,7 @@
 package net.atomshare.cattorrent;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -32,7 +34,7 @@ public class  Metainfo {
     //This constructor takes absolute path from gui,
     //locates file in the filesystem
     //and provides access to its contents
-    public Metainfo(String str) {
+    public Metainfo(String str) throws IOException {
         Path path = FileSystems.getDefault().getPath(str);
         Map metainfo = readInfo(path);
         //assume that torrent file is correctly bencoded
@@ -107,17 +109,18 @@ public class  Metainfo {
         }
     }
 
-    private Map readInfo(Path path){
+    private Map readInfo(Path path) throws IOException {
         try {
             ByteString bs = new ByteString(Files.readAllBytes(path));
             //assume that torrent file is correctly bencoded
             return (Map) decode(bs);
         } catch (IOException e) {
             System.out.println("Error occurred while reading the file. Check if provided filepath is correct");
-            return null;
+            throw e;
         } catch (OutOfMemoryError e) {
             System.out.println("This file is too large. Probably not a torrent file");
-            return null;
+            throw new IOException("This file is too large. Probably not a torrent file", e);
+            //return null;
         } catch (SecurityException e) {
             System.out.println("No permission to read the file");
             return null;

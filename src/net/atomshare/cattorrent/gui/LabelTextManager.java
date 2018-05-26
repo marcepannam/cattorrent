@@ -1,3 +1,5 @@
+package net.atomshare.cattorrent.gui;
+
 public class LabelTextManager {
     private StringBuilder tab[];
     private boolean newIndex;

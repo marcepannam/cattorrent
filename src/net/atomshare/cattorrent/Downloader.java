@@ -1,5 +1,7 @@
 package net.atomshare.cattorrent;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,9 +26,7 @@ public class Downloader {
     public static void main(String[] args) throws IOException {
         // code only for testing, will be refactored later
         Metainfo metainfo = new Metainfo(args[0]);
-        Downloader d = new Downloader(metainfo, (float p) -> {
-            System.out.println("progress: " + p);
-        });
+        Downloader d = new Downloader(metainfo, p -> System.out.println("progress: " + p));
         d.run();
         d.saveToFile("a.txt");
     }
