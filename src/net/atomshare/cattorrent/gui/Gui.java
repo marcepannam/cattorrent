@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Gui {
@@ -17,15 +19,18 @@ public class Gui {
     public static void main(String args[]) throws InterruptedException, IOException {
         Controller c = new Controller();
         SwingUtilities.invokeLater(() -> createAndShowGUI(c));
+        ExecutorService eservice = Executors.newCachedThreadPool();
+        int idx = 0;
         while (true) {
-            boolean started = false;
             TimeUnit.SECONDS.sleep(1);
-            for (Downloader d : c.downloaders) {
-                started = true;
-                d.run();
+            while (idx < c.downloaders.size()) {
+                eservice.execute(c.downloaders.get(idx++));
             }
-            if (started) break;
+            System.out.println(idx);
+            if (idx>100) break;
+            Thread.yield();
         }
+        eservice.shutdown();
     }
 
     public static void createAndShowGUI(Controller c) {

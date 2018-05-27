@@ -23,6 +23,7 @@ public class Controller {
     public boolean startDownload(File file, JProgressBar progressBar, JLabel logArea, JFrame myWindow) {
         try  {
             Metainfo met = new Metainfo(file.getAbsolutePath());
+            logEvent(logArea, file.getName() + " parsed successfuly");
             downloaders.add(new Downloader(met, new Downloader.DownloadProgressListener() {
                 @Override
                 public void onProgress(float p) {

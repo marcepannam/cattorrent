@@ -33,7 +33,7 @@ public class PeerConnection {
     private byte[] peerInfo;
     private Downloader.DownloadProgressListener listener;
 
-    public PeerConnection(Metainfo metainfo, byte[] peerInfo, Downloader.DownloadProgressListener listener) throws IOException {
+    public PeerConnection(Metainfo metainfo, byte[] peerInfo, Downloader.DownloadProgressListener listener) {
         this.metainfo = metainfo;
         this.peerInfo = peerInfo;
         this.listener = listener;

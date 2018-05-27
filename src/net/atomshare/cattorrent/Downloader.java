@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class Downloader {
+public class Downloader implements Runnable {
 
     public interface DownloadProgressListener {
         /**
@@ -59,7 +59,7 @@ public class Downloader {
     /**
      * Run download.
      */
-    public void run() throws IOException {
+    public void run() {
         List<byte[]> peersInfos = requestPeersFromTracker();
         for (byte[] info : peersInfos) {
             peers.add(new PeerConnection(metainfo, info, listener));
@@ -106,11 +106,30 @@ public class Downloader {
         
     }
 
-    public List<byte[]> requestPeersFromTracker() throws IOException {
+    public List<byte[]> requestPeersFromTracker()  {
+        listener.onLog("Building tracker request...");
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
-        URL url = new URL(tracker_request.buildBaseUrl());
-        byte[] trackerData = TrackerResponse.get(url);
-        Object trackerResp = Bencoder.decode(trackerData);
+        Object trackerResp;
+        URL url;
+        try {
+            url = new URL(tracker_request.buildBaseUrl());
+        } catch (IOException e) {
+            listener.onLog("Aborting, unable to build baseURL");
+            return null;
+        }
+        byte[] trackerData;
+        try {
+            trackerData = TrackerResponse.get(url);
+        } catch (IOException e) {
+            listener.onLog("Aborting, error while getting tracker response");
+            return null;
+        }
+        try {
+            trackerResp = Bencoder.decode(trackerData);
+        } catch (IOException e) {
+            listener.onLog("Aborting, unable to decode tracker response");
+            return null;
+        }
 
         ByteString peers1 = (ByteString)((Map<Object,Object>)trackerResp).get(new ByteString("peers"));
 
