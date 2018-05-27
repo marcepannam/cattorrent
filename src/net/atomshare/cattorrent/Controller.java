@@ -13,7 +13,7 @@ public class Controller {
 
     public Controller() {
         this.downloaders = new ArrayList<>();
-        }
+    }
 
     /**
      this method takes file from the user
@@ -22,9 +22,14 @@ public class Controller {
      */
     public boolean startDownload(File file, JProgressBar progressBar, JLabel logArea, JFrame myWindow) {
         try  {
-            Metainfo met = new Metainfo(file.getAbsolutePath());
+            String path = file.getAbsolutePath();
+            if (!path.endsWith(".torrent")) {
+                logEvent(logArea, "Please select .torrent file");
+            }
+            String target = path.substring(0, path.length() - 8);
+            Metainfo met = new Metainfo(path);
             logEvent(logArea, file.getName() + " parsed successfuly");
-            downloaders.add(new Downloader(met, new Downloader.DownloadProgressListener() {
+            Downloader d = new Downloader(met, new Downloader.DownloadProgressListener() {
                 @Override
                 public void onProgress(float p) {
                     SwingUtilities.invokeLater(() -> {
@@ -37,7 +42,17 @@ public class Controller {
                 public void onLog(String message) {
                     logEvent(logArea, message);
                 }
-            }));
+            });
+            new Thread(() -> {
+                d.run();
+                logEvent(logArea, "File saved: " + target);
+                try {
+                    d.saveToFile(target);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+            downloaders.add(d);
             return true;
         } catch (IOException e) {
             logEvent(logArea, "Error while parsing file " + file.getName());

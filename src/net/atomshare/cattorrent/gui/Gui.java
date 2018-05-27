@@ -16,21 +16,9 @@ import java.util.concurrent.TimeUnit;
 
 public class Gui {
 
-    public static void main(String args[]) throws InterruptedException, IOException {
+    public static void main(String args[]) {
         Controller c = new Controller();
         SwingUtilities.invokeLater(() -> createAndShowGUI(c));
-        ExecutorService eservice = Executors.newCachedThreadPool();
-        int idx = 0;
-        while (true) {
-            TimeUnit.SECONDS.sleep(1);
-            while (idx < c.downloaders.size()) {
-                eservice.execute(c.downloaders.get(idx++));
-            }
-            System.out.println(idx);
-            if (idx>100) break;
-            Thread.yield();
-        }
-        eservice.shutdown();
     }
 
     public static void createAndShowGUI(Controller c) {

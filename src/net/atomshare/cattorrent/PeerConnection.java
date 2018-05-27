@@ -28,7 +28,9 @@ public class PeerConnection {
     /**
      * Are we chocked?
      */
-    private boolean choked = true;
+    private boolean chocked = true;
+
+    public boolean isChocked() { return chocked; }
 
     private byte[] peerInfo;
     private Downloader.DownloadProgressListener listener;
@@ -40,6 +42,10 @@ public class PeerConnection {
         hasPieces = new ArrayList<>();
         for (int i=0; i < metainfo.getPieceCount(); i ++)
             hasPieces.add(false);
+    }
+
+    public boolean hasPiece(int j) {
+        return hasPieces.get(j);
     }
 
     public static class Message {
@@ -108,7 +114,8 @@ public class PeerConnection {
             byte[] mask = new byte[length - 1];
             in.readFully(mask);
             for (int i = 0; i < hasPieces.size(); i++) {
-                if (((mask[i / 8] >> (i % 8))&1) != 0) {
+                if (((mask[i / 8] >> (7 - i%8))&1) != 0) {
+                    System.out.println("hasPiece " + i);
                     hasPieces.set(i, true);
                 }
             }
@@ -116,9 +123,9 @@ public class PeerConnection {
             int piece = in.readInt();
             hasPieces.set(piece, true);
         } else if (kind == CHOKE) {
-            choked = true;
+            chocked = true;
         } else if (kind == UNCHOKE) {
-            choked = false;
+            chocked = false;
         } else {
             byte[] bytes = new byte[length - 1];
             in.readFully(bytes);
@@ -128,15 +135,6 @@ public class PeerConnection {
     }
 
     public void init() throws IOException {
-        TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
-        listener.onLog("Connecting with the tracker at " + metainfo.getDecodedAnnounceUrl());
-        URL url = new URL(tracker_request.buildBaseUrl());
-        byte[] trackerData = TrackerResponse.get(url);
-        Object trackerResp = Bencoder.decode(trackerData);
-        listener.onLog("Parsing tracker response...");
-
-
-
         String ipAddress = Byte.toUnsignedInt(peerInfo[0]) + "." + Byte.toUnsignedInt(peerInfo[1])
                 + "." + Byte.toUnsignedInt(peerInfo[2]) + "." + Byte.toUnsignedInt(peerInfo[3]);
         int port = Byte.toUnsignedInt(peerInfo[5]) + Byte.toUnsignedInt(peerInfo[4]) * 256;

@@ -7,16 +7,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class Downloader implements Runnable {
 
     public interface DownloadProgressListener {
         /**
          * Report download progress.
+         *
          * @param p Progress (from 0 to 1)
          */
         void onProgress(float p);
@@ -44,7 +43,7 @@ public class Downloader implements Runnable {
         });
         d.run();
         //d.saveToFile("a.txt");
-        //d.saveToFile(args[1]);
+        d.saveToFile(args[1]);
     }
 
     private DownloadProgressListener listener;
@@ -60,15 +59,41 @@ public class Downloader implements Runnable {
      * Run download.
      */
     public void run() {
-        List<byte[]> peersInfos = requestPeersFromTracker();
-        for (byte[] info : peersInfos) {
-            peers.add(new PeerConnection(metainfo, info, listener));
-        }
-        initChunks();
+        try {
+            List<byte[]> peersInfos = requestPeersFromTracker();
+            for (byte[] info : peersInfos) {
+                peers.add(new PeerConnection(metainfo, info, listener));
+            }
+            initChunks();
 
-        //for (PeerConnection peer : peers) {
-            peerStart(peers.get(0));
-        //}
+            for (PeerConnection peer : peers) {
+                peerStart(peer);
+            }
+
+            while (chunksLeft > 0) {
+                Thread.sleep(1000);
+                // TODO: make request to tracker
+
+
+            }
+
+            listener.onLog("download finished");
+        } catch(Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void printState() {
+         System.out.println(chunksLeft);
+
+                System.out.println("+++");
+                for (List<ByteString> p : pieces) {
+                    for (ByteString a : p)
+                        System.out.print((a == null) + " ");
+                    //System.out.println();
+                }
+
+                System.out.println("---");
     }
 
     private void peerStart(PeerConnection peer) {
@@ -84,29 +109,80 @@ public class Downloader implements Runnable {
     public void peerRun(PeerConnection peer) throws IOException {
         peer.init();
 
-            for (int j = 0; j < pieces.size(); j++) {
-                for (int i=0; i < pieces.get(j).size(); i ++)
-                    requestPiece(peer, j, i);
-            }
+        //for (int j = 0; j < pieces.size(); j++) {
+        //    for (int i=0; i < pieces.get(j).size(); i ++)
+        //        requestPiece(peer, j, i);
+        //}
 
-            while (true) {
-                PeerConnection.Message msg = peer.readMessage();
-                if (msg.kind == PeerConnection.Message.PIECE) {
-                    if (pieces.get(msg.index).get(msg.begin/CHUNK_LENGTH) == null) {
+        int pendingRequests = 0;
+
+        while (chunksLeft > 0) {
+            System.out.println("left " + chunksLeft);
+            PeerConnection.Message msg = peer.readMessage();
+
+            if (msg.kind == PeerConnection.Message.PIECE) {
+                synchronized (this) {
+                    if (pieces.get(msg.index).get(msg.begin / CHUNK_LENGTH) == null) {
                         pieces.get(msg.index).set(msg.begin / CHUNK_LENGTH, new ByteString(msg.body));
                         chunksLeft--;
                         listener.onProgress((float) chunksLeft / allChunkCount);
                         if (chunksLeft == 0) break;
+                    } else {
+                        System.out.println("duplicate chunk " + msg.index + " " + msg.begin);
                     }
-                } else {
-                    System.out.println("Sth else");
                 }
+                pendingRequests --;
             }
 
-        
+            if (!peer.isChocked()) {
+                while (pendingRequests < 10) {
+                    if (requestRandomPiece(peer))
+                        pendingRequests ++;
+                    else
+                        break;
+                }
+            }
+        }
+
+
     }
 
-    public List<byte[]> requestPeersFromTracker()  {
+    private synchronized boolean requestRandomPiece(PeerConnection peer) throws IOException {
+        if (chunksLeft == 0) return false;
+
+        List<Integer> candidates = new ArrayList<>();
+
+        for (int j = 0; j < pieces.size(); j++) {
+            if (!isPieceComplete(j) && peer.hasPiece(j)) {
+                candidates.add(j);
+            }
+        }
+
+        if(candidates.size() == 0) return false;
+
+        int k = (new Random()).nextInt(candidates.size());
+        int piece = candidates.get(k);
+        int chunk = 0;
+
+        for (int i=0; i < pieces.get(piece).size(); i ++) {
+            if (pieces.get(piece).get(i) == null) {
+                chunk = i;
+                break;
+            }
+        }
+
+        requestPiece(peer, piece, chunk);
+        return true;
+    }
+
+    private boolean isPieceComplete(int j) {
+        for (ByteString s : pieces.get(j)) {
+            if (s == null) return false;
+        }
+        return true;
+    }
+
+    public List<byte[]> requestPeersFromTracker() {
         listener.onLog("Building tracker request...");
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
         Object trackerResp;
@@ -131,11 +207,11 @@ public class Downloader implements Runnable {
             return null;
         }
 
-        ByteString peers1 = (ByteString)((Map<Object,Object>)trackerResp).get(new ByteString("peers"));
+        ByteString peers1 = (ByteString) ((Map<Object, Object>) trackerResp).get(new ByteString("peers"));
 
         byte[] peersArray = peers1.getBytes();
         List<byte[]> peers = new ArrayList<>();
-        for (int i=0; i <= peersArray.length - 6; i+=6) {
+        for (int i = 0; i <= peersArray.length - 6; i += 6) {
             peers.add(Arrays.copyOfRange(peersArray, i, i + 6));
         }
         return peers;
@@ -182,7 +258,10 @@ public class Downloader implements Runnable {
     private void requestPiece(PeerConnection peer, int pieceIndex, int chunkIndex) throws IOException {
         int maxLength1 = metainfo.getLength() - pieceIndex * metainfo.getPieceLength() - chunkIndex * CHUNK_LENGTH;
         int maxLength2 = metainfo.getPieceLength() - chunkIndex * CHUNK_LENGTH;
-        peer.sendRequest(pieceIndex, chunkIndex * CHUNK_LENGTH, Math.min(CHUNK_LENGTH, Math.min(maxLength1, maxLength2)));
+        int length = Math.min(CHUNK_LENGTH, Math.min(maxLength1, maxLength2));
+        if (length <= 0) throw new RuntimeException("bad length " + maxLength1 + " " + maxLength2);
+
+        peer.sendRequest(pieceIndex, chunkIndex * CHUNK_LENGTH, length);
     }
 
     /**
@@ -195,16 +274,15 @@ public class Downloader implements Runnable {
         for (int i = 0; i < pieceCount; i++) {
             int count = chunkCount;
             if (i == pieceCount - 1) {
-                int lastLength = metainfo.getPieceLength() * pieceCount - metainfo.getLength();
-                if (lastLength != 0) {
-                    count = (lastLength + CHUNK_LENGTH - 1) / CHUNK_LENGTH;
-                }
+                int lastLength = metainfo.getLength() - metainfo.getPieceLength() * (pieceCount-1);
+                if (lastLength == 0) throw new RuntimeException("calculation error");
+                count = (lastLength + CHUNK_LENGTH - 1) / CHUNK_LENGTH;
             }
             ArrayList<ByteString> l = new ArrayList<ByteString>();
             for (int j = 0; j < count; j++) {
                 l.add(null);
                 chunksLeft++;
-                allChunkCount ++;
+                allChunkCount++;
             }
             pieces.add(l);
         }
