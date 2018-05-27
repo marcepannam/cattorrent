@@ -1,4 +1,7 @@
-package net.atomshare.cattorrent;
+package net.atomshare.cattorrent.gui;
+
+import net.atomshare.cattorrent.Downloader;
+import net.atomshare.cattorrent.Metainfo;
 
 import javax.swing.*;
 import java.io.File;
@@ -25,6 +28,7 @@ public class Controller {
             String path = file.getAbsolutePath();
             if (!path.endsWith(".torrent")) {
                 logEvent(logArea, "Please select .torrent file");
+                return false;
             }
             String target = path.substring(0, path.length() - 8);
             Metainfo met = new Metainfo(path);

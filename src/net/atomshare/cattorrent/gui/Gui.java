@@ -1,18 +1,11 @@
 package net.atomshare.cattorrent.gui;
 
-import net.atomshare.cattorrent.Controller;
-import net.atomshare.cattorrent.Downloader;
-
 import java.io.File;
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class Gui {
 

@@ -147,27 +147,30 @@ public class Downloader implements Runnable {
 
     }
 
-    private synchronized boolean requestRandomPiece(PeerConnection peer) throws IOException {
-        if (chunksLeft == 0) return false;
+    private boolean requestRandomPiece(PeerConnection peer) throws IOException {
+        int piece, chunk;
+        synchronized(this) {
+            if (chunksLeft == 0) return false;
 
-        List<Integer> candidates = new ArrayList<>();
+            List<Integer> candidates = new ArrayList<>();
 
-        for (int j = 0; j < pieces.size(); j++) {
-            if (!isPieceComplete(j) && peer.hasPiece(j)) {
-                candidates.add(j);
+            for (int j = 0; j < pieces.size(); j++) {
+                if (!isPieceComplete(j) && peer.hasPiece(j)) {
+                    candidates.add(j);
+                }
             }
-        }
 
-        if(candidates.size() == 0) return false;
+            if (candidates.size() == 0) return false;
 
-        int k = (new Random()).nextInt(candidates.size());
-        int piece = candidates.get(k);
-        int chunk = 0;
+            int k = (new Random()).nextInt(candidates.size());
+            piece = candidates.get(k);
+            chunk = 0;
 
-        for (int i=0; i < pieces.get(piece).size(); i ++) {
-            if (pieces.get(piece).get(i) == null) {
-                chunk = i;
-                break;
+            for (int i = 0; i < pieces.get(piece).size(); i++) {
+                if (pieces.get(piece).get(i) == null) {
+                    chunk = i;
+                    break;
+                }
             }
         }
 
