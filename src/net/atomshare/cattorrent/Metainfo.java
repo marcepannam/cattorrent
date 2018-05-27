@@ -115,15 +115,12 @@ public class  Metainfo {
             //assume that torrent file is correctly bencoded
             return (Map) decode(bs);
         } catch (IOException e) {
-            System.out.println("Error occurred while reading the file. Check if provided filepath is correct");
-            throw e;
+            throw new IOException("Error occurred while reading the file. Check if provided filepath is correct", e);
         } catch (OutOfMemoryError e) {
-            System.out.println("This file is too large. Probably not a torrent file");
             throw new IOException("This file is too large. Probably not a torrent file", e);
             //return null;
         } catch (SecurityException e) {
-            System.out.println("No permission to read the file");
-            return null;
+            throw new IOException("No permission to read the file", e);
         }
     }
 

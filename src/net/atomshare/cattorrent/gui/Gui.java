@@ -36,19 +36,20 @@ public class Gui {
         myWindow.setLayout(null);
         myWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JLabel logArea = createLog(myWindow);
-        myWindow.add(new JLabel());
         JLabel fileArea = createFileLabel(myWindow);
         createIcon(myWindow);
         createMenu(myWindow, logArea, fileArea, files);
-        createDownloadButton(myWindow, logArea, files, c);
+        JPanel downloadsArea = createDownloadsPanel(myWindow);
+        createDownloadButton(myWindow, logArea, downloadsArea, files, c);
         myWindow.setVisible(true);
     }
 
     public static void logEvent(JLabel logArea, String msg){
-        StringBuilder sb = new StringBuilder(logArea.getText());
-        sb.insert(6, Instant.now() + " " + msg + "<br/>");
-        String logMsg = sb.toString();
-        SwingUtilities.invokeLater(() -> logArea.setText(logMsg));
+        SwingUtilities.invokeLater(() ->{
+            StringBuilder sb = new StringBuilder(logArea.getText());
+            sb.insert(6, Instant.now() + " " + msg + "<br/>");
+            logArea.setText(sb.toString());
+        });
     }
 
     private static JLabel createFileLabel(JFrame myWindow) {
@@ -74,6 +75,15 @@ public class Gui {
         } else {
             System.err.println("Unable to locate image in the filesystem");
         }
+    }
+
+    private static JPanel createDownloadsPanel(JFrame myWindow) {
+        JPanel downloadsPanel = new JPanel();
+        downloadsPanel.setLayout(new BoxLayout(downloadsPanel, BoxLayout.Y_AXIS));
+        downloadsPanel.setBackground(Color.LIGHT_GRAY);
+        downloadsPanel.setBounds(0, 70, 600, 180);
+        myWindow.add(downloadsPanel);
+        return downloadsPanel;
     }
 
     private static void createMenu(JFrame myWindow, JLabel logArea, JLabel fileArea, ArrayList<File> files) {
@@ -123,40 +133,43 @@ public class Gui {
         logArea.setVerticalAlignment(JLabel.TOP);
         logArea.setText("<html></html>");
         JScrollPane scrollPane = new JScrollPane(logArea,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         logPanel.add(scrollPane, BorderLayout.CENTER);
         myWindow.add(logPanel);
         return logArea;
     }
 
-    private static void createDownloadButton(JFrame myWindow, JLabel logArea, ArrayList<File> files, Controller c) {
+    private static void createDownloadButton(
+            JFrame myWindow, JLabel logArea, JPanel downloadsArea, ArrayList<File> files, Controller c) {
         JButton buttonDownloadFile = new JButton("Download");
         buttonDownloadFile.setBounds(0, 40, 160, 30);
-        JPanel downloadsPanel = new JPanel();
-        downloadsPanel.setLayout(new BoxLayout(downloadsPanel, BoxLayout.Y_AXIS));
-        downloadsPanel.setBackground(Color.LIGHT_GRAY);
-        downloadsPanel.setBounds(0, 70, 600, 180);
-        myWindow.add(downloadsPanel);
         myWindow.add(buttonDownloadFile);
-        buttonDownloadFile.addActionListener( actionEvent -> {
-            JProgressBar progressBar = new JProgressBar(0, 100);
-            progressBar.setValue(0);
-            progressBar.setStringPainted(true);
+        buttonDownloadFile.addActionListener(actionEvent -> {
             if (files.isEmpty()) {
-                logEvent(logArea,"There is no file for download");
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(myWindow,
+                        "Please select file for download:\nFile -> Open"));
+                logEvent(logArea, "Invalid attempt of download with no file selected");
                 return;
             }
-            JLabel fileNameLabel = new JLabel(files.get(files.size()-1).getName());
-            JPanel fileDownload = new JPanel(new BorderLayout());
-            fileDownload.setMaximumSize(new Dimension(300, 30));
-            fileDownload.setAlignmentX(Component.LEFT_ALIGNMENT);
-            fileDownload.setBackground(Color.LIGHT_GRAY);
-            fileDownload.setOpaque(true);
-            fileDownload.add(progressBar, BorderLayout.EAST);
-            fileDownload.add(fileNameLabel, BorderLayout.WEST);
-            downloadsPanel.add(fileDownload);
-            downloadsPanel.validate();
-            c.startDownload(files.get(files.size()-1), progressBar, logArea);
+            createDownloadProgress(myWindow, logArea, downloadsArea, files, c);
         });
+    }
+
+    private static void createDownloadProgress(
+            JFrame myWindow, JLabel logArea, JPanel downloadsArea, ArrayList<File> files, Controller c) {
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setValue(0);
+        if (!c.startDownload(files.get(files.size()-1), progressBar, logArea, myWindow)) return;
+        progressBar.setStringPainted(true);
+        JLabel fileNameLabel = new JLabel(files.get(files.size()-1).getName());
+        JPanel fileDownload = new JPanel(new BorderLayout());
+        fileDownload.setMaximumSize(new Dimension(300, 30));
+        fileDownload.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fileDownload.setBackground(Color.LIGHT_GRAY);
+        fileDownload.setOpaque(true);
+        fileDownload.add(progressBar, BorderLayout.EAST);
+        fileDownload.add(fileNameLabel, BorderLayout.WEST);
+        downloadsArea.add(fileDownload);
+        downloadsArea.validate();
     }
 }
