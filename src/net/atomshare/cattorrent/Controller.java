@@ -34,7 +34,7 @@ public class Controller {
 
                 @Override
                 public void onLog(String message) {
-                    SwingUtilities.invokeLater(() -> logEvent(logArea, message));
+                    logEvent(logArea, message);
                 }
             }));
             return true;
