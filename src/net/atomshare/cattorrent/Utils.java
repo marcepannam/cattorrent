@@ -7,7 +7,7 @@ public class Utils {
     public static final int SHA1_BYTES = 20;
 
     public static ByteString computeSha1Hash(ByteString s) {
-        try{
+        try {
             MessageDigest msgHash = MessageDigest.getInstance("SHA-1");
             msgHash.update(s.getBytes());
             return (new ByteString(msgHash.digest()));

@@ -19,12 +19,13 @@ public class Controller {
     }
 
     /**
-     this method takes file from the user
-     and builds Downloader based on the file's data
-     @return true on success, false on failure
+     * this method takes file from the user
+     * and builds Downloader based on the file's data
+     *
+     * @return true on success, false on failure
      */
     public boolean startDownload(File file, JProgressBar progressBar, JLabel logArea, JFrame myWindow) {
-        try  {
+        try {
             String path = file.getAbsolutePath();
             if (!path.endsWith(".torrent")) {
                 logEvent(logArea, "Please select .torrent file");
@@ -68,7 +69,7 @@ public class Controller {
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(myWindow,
                             "It is impossible to open provided file.\n" +
                                     "Please check if it is a valid torrent file. Its extension is: \""
-                            + extension + "\" and should be: \".torrent\"",
+                                    + extension + "\" and should be: \".torrent\"",
                             "Warning", JOptionPane.WARNING_MESSAGE));
                 }
             } else {

@@ -30,8 +30,8 @@ public class Gui {
         myWindow.setVisible(true);
     }
 
-    public static void logEvent(JLabel logArea, String msg){
-        SwingUtilities.invokeLater(() ->{
+    public static void logEvent(JLabel logArea, String msg) {
+        SwingUtilities.invokeLater(() -> {
             StringBuilder sb = new StringBuilder(logArea.getText());
             sb.insert(6, Instant.now() + " " + msg + "<br/>");
             logArea.setText(sb.toString());
@@ -82,22 +82,22 @@ public class Gui {
 
         //create menu items
         JMenuItem openMenuItem = new JMenuItem("Open");
-        openMenuItem.addActionListener( actionEvent -> {
+        openMenuItem.addActionListener(actionEvent -> {
 
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Open torrent file");
             fileChooser.setCurrentDirectory(new File("\\"));
             int option = fileChooser.showOpenDialog(new JButton());
             switch (option) {
-                case (JFileChooser.APPROVE_OPTION) :
+                case (JFileChooser.APPROVE_OPTION):
                     fileArea.setText("<html>File: " + fileChooser.getSelectedFile().getName() + "</html>");
                     logEvent(logArea, " File for download: " +
                             fileChooser.getSelectedFile().getName());
                     files.add(fileChooser.getSelectedFile());
                     break;
-                case (JFileChooser.CANCEL_OPTION) :
+                case (JFileChooser.CANCEL_OPTION):
                     break;
-                case (JFileChooser.ERROR_OPTION) :
+                case (JFileChooser.ERROR_OPTION):
                     logEvent(logArea, "Error occurred while choosing a file.");
                     break;
             }
@@ -145,9 +145,9 @@ public class Gui {
             JFrame myWindow, JLabel logArea, JPanel downloadsArea, ArrayList<File> files, Controller c) {
         JProgressBar progressBar = new JProgressBar(0, 100);
         progressBar.setValue(0);
-        if (!c.startDownload(files.get(files.size()-1), progressBar, logArea, myWindow)) return;
+        if (!c.startDownload(files.get(files.size() - 1), progressBar, logArea, myWindow)) return;
         progressBar.setStringPainted(true);
-        JLabel fileNameLabel = new JLabel(files.get(files.size()-1).getName());
+        JLabel fileNameLabel = new JLabel(files.get(files.size() - 1).getName());
         JPanel fileDownload = new JPanel(new BorderLayout());
         fileDownload.setMaximumSize(new Dimension(300, 30));
         fileDownload.setAlignmentX(Component.LEFT_ALIGNMENT);

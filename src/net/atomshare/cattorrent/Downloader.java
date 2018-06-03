@@ -20,6 +20,9 @@ public class Downloader implements Runnable {
          */
         void onProgress(float p);
 
+        /**
+         * Log a message.
+         */
         void onLog(String message);
     }
 
@@ -78,22 +81,22 @@ public class Downloader implements Runnable {
             }
 
             listener.onLog("download finished");
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
 
     private void printState() {
-         System.out.println(chunksLeft);
+        System.out.println(chunksLeft);
 
-                System.out.println("+++");
-                for (List<ByteString> p : pieces) {
-                    for (ByteString a : p)
-                        System.out.print((a == null) + " ");
-                    //System.out.println();
-                }
+        System.out.println("+++");
+        for (List<ByteString> p : pieces) {
+            for (ByteString a : p)
+                System.out.print((a == null) + " ");
+            //System.out.println();
+        }
 
-                System.out.println("---");
+        System.out.println("---");
     }
 
     private void peerStart(PeerConnection peer) {
@@ -108,11 +111,6 @@ public class Downloader implements Runnable {
 
     public void peerRun(PeerConnection peer) throws IOException {
         peer.init();
-
-        //for (int j = 0; j < pieces.size(); j++) {
-        //    for (int i=0; i < pieces.get(j).size(); i ++)
-        //        requestPiece(peer, j, i);
-        //}
 
         int pendingRequests = 0;
 
@@ -131,13 +129,13 @@ public class Downloader implements Runnable {
                         System.out.println("duplicate chunk " + msg.index + " " + msg.begin);
                     }
                 }
-                pendingRequests --;
+                pendingRequests--;
             }
 
             if (!peer.isChocked()) {
                 while (pendingRequests < 10) {
                     if (requestRandomPiece(peer))
-                        pendingRequests ++;
+                        pendingRequests++;
                     else
                         break;
                 }
@@ -149,7 +147,7 @@ public class Downloader implements Runnable {
 
     private boolean requestRandomPiece(PeerConnection peer) throws IOException {
         int piece, chunk;
-        synchronized(this) {
+        synchronized (this) {
             if (chunksLeft == 0) return false;
 
             List<Integer> candidates = new ArrayList<>();
@@ -277,7 +275,7 @@ public class Downloader implements Runnable {
         for (int i = 0; i < pieceCount; i++) {
             int count = chunkCount;
             if (i == pieceCount - 1) {
-                int lastLength = metainfo.getLength() - metainfo.getPieceLength() * (pieceCount-1);
+                int lastLength = metainfo.getLength() - metainfo.getPieceLength() * (pieceCount - 1);
                 if (lastLength == 0) throw new RuntimeException("calculation error");
                 count = (lastLength + CHUNK_LENGTH - 1) / CHUNK_LENGTH;
             }

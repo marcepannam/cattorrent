@@ -30,9 +30,9 @@ public class ByteString implements Comparable<ByteString> {
     }
 
     public boolean equals(Object o) {
-        if(o == null) return false;
-        if(o instanceof ByteString) {
-            ByteString b = (ByteString)o;
+        if (o == null) return false;
+        if (o instanceof ByteString) {
+            ByteString b = (ByteString) o;
             return Arrays.equals(b.data, data);
         } else {
             return false;
@@ -51,11 +51,11 @@ public class ByteString implements Comparable<ByteString> {
     public int compareTo(ByteString byteString) {
         int len;
         len = Math.min(length(), byteString.length());
-        for(int i=0; i<len; i++){
-            if(byteString.data[i] > this.data[i]) return -1;
-            if(byteString.data[i] < this.data[i]) return 1;
+        for (int i = 0; i < len; i++) {
+            if (byteString.data[i] > this.data[i]) return -1;
+            if (byteString.data[i] < this.data[i]) return 1;
         }
-        if(byteString.length() > length()) return -1;
+        if (byteString.length() > length()) return -1;
         else return 1;
     }
 }
