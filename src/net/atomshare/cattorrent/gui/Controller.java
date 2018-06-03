@@ -34,7 +34,7 @@ public class Controller {
             String target = path.substring(0, path.length() - 8);
             Metainfo met = new Metainfo(path);
             logEvent(logArea, file.getName() + " parsed successfuly");
-            Downloader d = new Downloader(met, new Downloader.DownloadProgressListener() {
+            Downloader d = new Downloader(met, target, new Downloader.DownloadProgressListener() {
                 @Override
                 public void onProgress(float p) {
                     SwingUtilities.invokeLater(() -> {
@@ -51,11 +51,6 @@ public class Controller {
             new Thread(() -> {
                 d.run();
                 logEvent(logArea, "File saved: " + target);
-                try {
-                    d.saveToFile(target);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }).start();
             downloaders.add(d);
             return true;

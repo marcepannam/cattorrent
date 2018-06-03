@@ -117,7 +117,7 @@ public class PeerConnection {
             in.readFully(mask);
             for (int i = 0; i < hasPieces.size(); i++) {
                 if (((mask[i / 8] >> (7 - i % 8)) & 1) != 0) {
-                    System.out.println("hasPiece " + i);
+                    //System.out.println("hasPiece " + i);
                     hasPieces.set(i, true);
                 }
             }
