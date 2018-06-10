@@ -12,10 +12,12 @@ import java.util.List;
 import static net.atomshare.cattorrent.gui.Gui.logEvent;
 
 public class Controller {
+    private Integer id;
     public List<Downloader> downloaders;
 
     public Controller() {
         this.downloaders = new ArrayList<>();
+        id = 0;
     }
 
     /**
@@ -23,7 +25,7 @@ public class Controller {
      and builds Downloader based on the file's data
      @return true on success, false on failure
      */
-    public boolean startDownload(File file, JProgressBar progressBar, JLabel logArea, JFrame myWindow) {
+    public boolean startDownload(File file, JTable downloadsArea, JLabel logArea, JFrame myWindow) {
         try  {
             String path = file.getAbsolutePath();
             if (!path.endsWith(".torrent")) {
@@ -33,20 +35,22 @@ public class Controller {
             String target = path.substring(0, path.length() - 8);
             Metainfo met = new Metainfo(path);
             logEvent(logArea, file.getName() + " parsed successfuly");
-            Downloader d = new Downloader(met, new Downloader.DownloadProgressListener() {
-                @Override
-                public void onProgress(float p) {
-                    SwingUtilities.invokeLater(() -> {
-                        progressBar.setValue(Math.round((1 - p) * 100));
-                        progressBar.validate();
-                    });
-                }
-
-                @Override
-                public void onLog(String message) {
-                    logEvent(logArea, message);
-                }
-            });
+            Downloader d;
+            synchronized (this) {
+                d = new Downloader(met, new Downloader.DownloadProgressListener() {
+                    final int num = id++;
+                    @Override
+                    public void onProgress(float p) {
+                        SwingUtilities.invokeLater(() -> {
+                            downloadsArea.setValueAt(Math.round((1 - p) * 100), downloadsArea.convertRowIndexToView(num), 1);
+                        });
+                    }
+                    @Override
+                    public void onLog(String message) {
+                        logEvent(logArea, message);
+                    }
+                });
+            }
             new Thread(() -> {
                 d.run();
                 logEvent(logArea, "File saved: " + target);
