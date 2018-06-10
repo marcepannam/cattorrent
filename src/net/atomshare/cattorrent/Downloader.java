@@ -63,8 +63,9 @@ public class Downloader implements Runnable {
 
             List<ByteString> connectedPeers = new ArrayList<>();
 
+            List<byte[]> peersInfos;
             while (true) {
-                List<byte[]> peersInfos;
+
                 try {
                     peersInfos = requestPeersFromTracker();
                 } catch (Exception ex) {

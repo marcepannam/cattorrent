@@ -9,7 +9,9 @@ import java.nio.file.Path;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static net.atomshare.cattorrent.Bencoder.decode;
@@ -31,6 +33,22 @@ public class Metainfo {
     private ByteString pieces;
     private String name;
 
+    public List<String> getFilesName() {
+        return filesName;
+    }
+
+    public List<Integer> getFilesBegin() {
+        return filesBegin;
+    }
+
+    public List<Integer> getFilesLength() {
+        return filesLength;
+    }
+
+    private List<String> filesName = new ArrayList<>();
+    private List<Integer> filesBegin = new ArrayList<>();
+    private List<Integer> filesLength = new ArrayList<>();
+
     //This constructor takes absolute path from gui,
     //locates file in the filesystem
     //and provides access to its contents
@@ -41,10 +59,44 @@ public class Metainfo {
         info = (Map) metainfo.get(new ByteString("info"));
         announceUrl = (ByteString) metainfo.get(new ByteString("announce"));
         pieceLength = readPieceLength(info);
-        length = readLength(info);
+        readLength();
         pieces = readPieces(info);
         name = readName(info);
     }
+
+    private void readLength() {
+        if (info.containsKey(new ByteString("length"))) {
+            // single file torrent
+            length = (Integer) info.get(new ByteString("length"));
+            filesBegin.add(0);
+            filesLength.add(length);
+            filesName.add("");
+        } else {
+            // multi file torrent
+            List fs = (List) info.get(new ByteString("files"));
+            length = 0;
+            System.out.println("fs: " + fs);
+            for (Object f : fs) {
+                Map fileInfo = (Map) f;
+                int flength = (Integer) fileInfo.get(new ByteString("length"));
+                filesBegin.add(length);
+                filesLength.add(flength);
+                String name = "";
+                for (Object part : (List) fileInfo.get(new ByteString("path"))) {
+                    // a/b/c.txt -> [a, b, c.txt]
+                    String pathStr = ((ByteString) part).toString();
+                    if (pathStr.equals("..") || pathStr.equals(".") || pathStr.contains("/") || pathStr.contains("\\"))
+                        throw new SecurityException("bad path");
+                    name += "/" + pathStr;
+                }
+                name = name.substring(1);
+                filesName.add(name);
+                length += flength;
+            }
+        }
+    }
+
+
 
     //this methods allows to access utf-8 encoded url of the tracker
     public String getDecodedAnnounceUrl() {
@@ -99,10 +151,6 @@ public class Metainfo {
 
     private Integer readPieceLength(Map info) {
         return (Integer) info.get(new ByteString("piece length"));
-    }
-
-    private Integer readLength(Map info) {
-        return (Integer) info.get(new ByteString("length"));
     }
 
     private ByteString readPieces(Map info) {
