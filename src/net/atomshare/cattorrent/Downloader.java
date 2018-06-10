@@ -61,26 +61,28 @@ public class Downloader implements Runnable {
             checkPieces();
             tellProgress();
 
-            List<byte[]> peersInfos = requestPeersFromTracker();
-            for (byte[] info : peersInfos) {
-                peers.add(new PeerConnection(metainfo, info, listener));
-            }
-
-            for (PeerConnection peer : peers) {
-                peerStart(peer);
-            }
-
-            while (chunksLeft > 0) {
-                Thread.sleep(1000);
-                // TODO: make request to tracker
-            }
-
-            listener.onLog("download finished");
-            checkPieces();
+            List<ByteString> connectedPeers = new ArrayList<>();
 
             while (true) {
-                Thread.sleep(1000);
+                List<byte[]> peersInfos;
+                try {
+                    peersInfos = requestPeersFromTracker();
+                } catch (Exception ex) {
+                    Thread.sleep(5000);
+                    continue;
+                }
+
+                for (byte[] info : peersInfos) {
+                    if(connectedPeers.contains(new ByteString(info))) continue;
+                    PeerConnection peer = new PeerConnection(metainfo, info, listener);
+                    peerStart(peer);
+                    peers.add(peer);
+                    connectedPeers.add(new ByteString(info));
+                }
+
+                Thread.sleep(30000);
             }
+
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -191,6 +193,10 @@ public class Downloader implements Runnable {
         return true;
     }
 
+    /**
+     * Requests peer information from the tracker.
+     * Returns 6-byte address for each peer (4 byte of IP, 2 bytes of port).
+     */
     private List<byte[]> requestPeersFromTracker() throws IOException {
         listener.onLog("Requesting data from tracker...");
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
@@ -199,7 +205,7 @@ public class Downloader implements Runnable {
         byte[] trackerData = TrackerResponse.get(url);
         Object trackerResp = Bencoder.decode(trackerData);
 
-        ByteString peers1 = (ByteString) ((Map<Object, Object>) trackerResp).get(new ByteString("peers"));
+        ByteString peers1 = (ByteString) ((Map) trackerResp).get(new ByteString("peers"));
 
         byte[] peersArray = peers1.getBytes();
         List<byte[]> peers = new ArrayList<>();

@@ -121,7 +121,7 @@ public class PeerConnection {
     public void sendPiece(int index, int begin, ByteString s) throws IOException {
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         out.writeInt(9 + s.length());
-        out.writeByte(Message.IECE);
+        out.writeByte(Message.PIECE);
         out.writeInt(index);
         out.writeInt(begin);
         out.write(s.getBytes());
