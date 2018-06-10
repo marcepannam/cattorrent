@@ -37,7 +37,7 @@ public class Controller {
             logEvent(logArea, file.getName() + " parsed successfuly");
             Downloader d;
             synchronized (this) {
-                d = new Downloader(met, new Downloader.DownloadProgressListener() {
+                d = new Downloader(met, target, new Downloader.DownloadProgressListener() {
                     final int num = id++;
                     @Override
                     public void onProgress(float p) {
@@ -54,11 +54,6 @@ public class Controller {
             new Thread(() -> {
                 d.run();
                 logEvent(logArea, "File saved: " + target);
-                try {
-                    d.saveToFile(target);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }).start();
             downloaders.add(d);
             return true;
