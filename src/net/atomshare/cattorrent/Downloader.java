@@ -73,11 +73,14 @@ public class Downloader implements Runnable {
             while (chunksLeft > 0) {
                 Thread.sleep(1000);
                 // TODO: make request to tracker
-
             }
 
             listener.onLog("download finished");
             checkPieces();
+
+            while (true) {
+                Thread.sleep(1000);
+            }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -102,7 +105,14 @@ public class Downloader implements Runnable {
 
         int pendingRequests = 0;
 
-        while (chunksLeft > 0) {
+        List<Boolean> bitmap = new ArrayList<>();
+        for (int i=0; i < pieces.size(); i ++) {
+            bitmap.add(isPieceComplete(i));
+        }
+        peer.sendBitmap(bitmap);
+        peer.sendUnchoke();
+
+        while (true) {
             //System.out.println("left " + chunksLeft);
             PeerConnection.Message msg = peer.readMessage();
 
@@ -119,6 +129,11 @@ public class Downloader implements Runnable {
                     }
                 }
                 pendingRequests--;
+            }
+
+            if (msg.kind == PeerConnection.Message.REQUEST) {
+                ByteString s = chunker.read(msg.index, msg.begin, msg.length);
+                peer.sendPiece(msg.index, msg.begin, s);
             }
 
             if (!peer.isChocked()) {
