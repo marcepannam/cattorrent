@@ -75,7 +75,7 @@ public class Gui {
         header.setBackground(new Color(160, 120, 240));
         header.setFont(new Font("Verdana", Font.BOLD, 14));
         JScrollPane scrollPane = new JScrollPane(downloadsTable);
-        scrollPane.setBounds(0, 70, 600, 280);
+        scrollPane.setBounds(0, 70, 600, 180);
         scrollPane.setOpaque(true);
         scrollPane.getViewport().setBackground(Color.LIGHT_GRAY);
         myWindow.add(scrollPane);
