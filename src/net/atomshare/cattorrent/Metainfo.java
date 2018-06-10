@@ -22,7 +22,7 @@ import static net.atomshare.cattorrent.Bencoder.encodeAsArray;
  * and presents it in an easily accessible manner
  */
 
-public class  Metainfo {
+public class Metainfo {
     private Path path;
     private ByteString announceUrl;
     private Map info;
@@ -50,26 +50,32 @@ public class  Metainfo {
     public String getDecodedAnnounceUrl() {
         return announceUrl.toString();
     }
+
     //this methods allows to access bencoded url of the tracker
     public ByteString getAnnounceUrl() {
         return announceUrl;
     }
+
     //this methods allow to access decoded contents of the .torrent file
     public String getName() {
         return name;
     }
+
     public Integer getLength() {
         return length;
     }
+
     public Integer getPieceLength() {
         return pieceLength;
     }
+
     //this method allows to access SHA1 hashes of the pieces in the .torrent file
     public ByteString getPieceHashes() {
         return pieces;
     }
+
     public ByteString getPieceHash(int i) {
-        return new ByteString(Arrays.copyOfRange(pieces.getBytes(), i * Utils.SHA1_BYTES,(i+1) * Utils.SHA1_BYTES));
+        return new ByteString(Arrays.copyOfRange(pieces.getBytes(), i * Utils.SHA1_BYTES, (i + 1) * Utils.SHA1_BYTES));
     }
 
     public ByteString getInfo() {
@@ -94,13 +100,16 @@ public class  Metainfo {
     private Integer readPieceLength(Map info) {
         return (Integer) info.get(new ByteString("piece length"));
     }
+
     private Integer readLength(Map info) {
         return (Integer) info.get(new ByteString("length"));
     }
+
     private ByteString readPieces(Map info) {
         return (ByteString) info.get(new ByteString("pieces"));
     }
-    private String readName (Map info) {
+
+    private String readName(Map info) {
         ByteString name = new ByteString("name");
         if (info.containsKey(name)) {
             return info.get(name).toString();

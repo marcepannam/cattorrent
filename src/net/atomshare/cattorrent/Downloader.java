@@ -1,14 +1,10 @@
 package net.atomshare.cattorrent;
 
-import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.stream.Stream;
 
 public class Downloader implements Runnable {
 
@@ -20,17 +16,21 @@ public class Downloader implements Runnable {
          */
         void onProgress(float p);
 
+        /**
+         * Log a message.
+         */
         void onLog(String message);
     }
 
-    public Downloader(Metainfo metainfo, DownloadProgressListener listener) {
+    public Downloader(Metainfo metainfo, String targetFile, DownloadProgressListener listener) throws IOException {
         this.metainfo = metainfo;
         this.listener = listener;
+        this.chunker = new FileChunker(targetFile, metainfo);
     }
 
     public static void main(String[] args) throws IOException {
         Metainfo metainfo = new Metainfo(args[0]);
-        Downloader d = new Downloader(metainfo, new DownloadProgressListener() {
+        Downloader d = new Downloader(metainfo, args[1], new DownloadProgressListener() {
             @Override
             public void onProgress(float p) {
                 System.out.println("progress: " + p);
@@ -42,58 +42,54 @@ public class Downloader implements Runnable {
             }
         });
         d.run();
-        //d.saveToFile("a.txt");
-        d.saveToFile(args[1]);
     }
 
+    private FileChunker chunker;
     private DownloadProgressListener listener;
     private Metainfo metainfo;
-    private List<List<ByteString>> pieces = new ArrayList<>();
+    private List<List<Boolean>> pieces = new ArrayList<>(); // which chunks are already downloaded?
     private List<PeerConnection> peers = new ArrayList<>();
     private int chunksLeft = 0;
     private int allChunkCount = 0;
-
-    private final int CHUNK_LENGTH = 16000;
 
     /**
      * Run download.
      */
     public void run() {
         try {
-            List<byte[]> peersInfos = requestPeersFromTracker();
-            for (byte[] info : peersInfos) {
-                peers.add(new PeerConnection(metainfo, info, listener));
-            }
             initChunks();
+            checkPieces();
+            tellProgress();
 
-            for (PeerConnection peer : peers) {
-                peerStart(peer);
+            List<ByteString> connectedPeers = new ArrayList<>();
+
+            while (true) {
+                List<byte[]> peersInfos;
+                try {
+                    peersInfos = requestPeersFromTracker();
+                } catch (Exception ex) {
+                    Thread.sleep(5000);
+                    continue;
+                }
+
+                for (byte[] info : peersInfos) {
+                    if(connectedPeers.contains(new ByteString(info))) continue;
+                    PeerConnection peer = new PeerConnection(metainfo, info, listener);
+                    peerStart(peer);
+                    peers.add(peer);
+                    connectedPeers.add(new ByteString(info));
+                }
+
+                Thread.sleep(30000);
             }
 
-            while (chunksLeft > 0) {
-                Thread.sleep(1000);
-                // TODO: make request to tracker
-
-
-            }
-
-            listener.onLog("download finished");
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
 
-    private void printState() {
-         System.out.println(chunksLeft);
-
-                System.out.println("+++");
-                for (List<ByteString> p : pieces) {
-                    for (ByteString a : p)
-                        System.out.print((a == null) + " ");
-                    //System.out.println();
-                }
-
-                System.out.println("---");
+    private void tellProgress() {
+        listener.onProgress((float) chunksLeft / allChunkCount);
     }
 
     private void peerStart(PeerConnection peer) {
@@ -106,38 +102,47 @@ public class Downloader implements Runnable {
         }).start();
     }
 
-    public void peerRun(PeerConnection peer) throws IOException {
+    private void peerRun(PeerConnection peer) throws IOException {
         peer.init();
-
-        //for (int j = 0; j < pieces.size(); j++) {
-        //    for (int i=0; i < pieces.get(j).size(); i ++)
-        //        requestPiece(peer, j, i);
-        //}
 
         int pendingRequests = 0;
 
-        while (chunksLeft > 0) {
-            System.out.println("left " + chunksLeft);
+        List<Boolean> bitmap = new ArrayList<>();
+        for (int i=0; i < pieces.size(); i ++) {
+            bitmap.add(isPieceComplete(i));
+        }
+        peer.sendBitmap(bitmap);
+        peer.sendUnchoke();
+
+        while (true) {
+            //System.out.println("left " + chunksLeft);
             PeerConnection.Message msg = peer.readMessage();
 
             if (msg.kind == PeerConnection.Message.PIECE) {
                 synchronized (this) {
-                    if (pieces.get(msg.index).get(msg.begin / CHUNK_LENGTH) == null) {
-                        pieces.get(msg.index).set(msg.begin / CHUNK_LENGTH, new ByteString(msg.body));
+                    if (!pieces.get(msg.index).get(msg.begin / FileChunker.CHUNK_LENGTH)) {
+                        pieces.get(msg.index).set(msg.begin / FileChunker.CHUNK_LENGTH, true);
+                        chunker.write(msg.index, msg.begin, new ByteString(msg.body));
                         chunksLeft--;
-                        listener.onProgress((float) chunksLeft / allChunkCount);
+                        tellProgress();
                         if (chunksLeft == 0) break;
                     } else {
                         System.out.println("duplicate chunk " + msg.index + " " + msg.begin);
                     }
                 }
-                pendingRequests --;
+                pendingRequests--;
+            }
+
+            if (msg.kind == PeerConnection.Message.REQUEST) {
+                ByteString s = chunker.read(msg.index, msg.begin, msg.length);
+                peer.sendPiece(msg.index, msg.begin, s);
             }
 
             if (!peer.isChocked()) {
+                //System.out.println("REQ:" + pendingRequests);
                 while (pendingRequests < 10) {
                     if (requestRandomPiece(peer))
-                        pendingRequests ++;
+                        pendingRequests++;
                     else
                         break;
                 }
@@ -149,7 +154,7 @@ public class Downloader implements Runnable {
 
     private boolean requestRandomPiece(PeerConnection peer) throws IOException {
         int piece, chunk;
-        synchronized(this) {
+        synchronized (this) {
             if (chunksLeft == 0) return false;
 
             List<Integer> candidates = new ArrayList<>();
@@ -164,53 +169,43 @@ public class Downloader implements Runnable {
 
             int k = (new Random()).nextInt(candidates.size());
             piece = candidates.get(k);
-            chunk = 0;
 
+            List<Integer> chunks = new ArrayList<>();
             for (int i = 0; i < pieces.get(piece).size(); i++) {
-                if (pieces.get(piece).get(i) == null) {
-                    chunk = i;
-                    break;
+                if (!pieces.get(piece).get(i)) {
+                    chunks.add(i);
                 }
             }
+
+            if(chunks.size() == 0) return false;
+            chunk = chunks.get((new Random()).nextInt(chunks.size()));
         }
+
 
         requestPiece(peer, piece, chunk);
         return true;
     }
 
     private boolean isPieceComplete(int j) {
-        for (ByteString s : pieces.get(j)) {
-            if (s == null) return false;
+        for (Boolean s : pieces.get(j)) {
+            if (!s) return false;
         }
         return true;
     }
 
-    public List<byte[]> requestPeersFromTracker() {
-        listener.onLog("Building tracker request...");
+    /**
+     * Requests peer information from the tracker.
+     * Returns 6-byte address for each peer (4 byte of IP, 2 bytes of port).
+     */
+    private List<byte[]> requestPeersFromTracker() throws IOException {
+        listener.onLog("Requesting data from tracker...");
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
-        Object trackerResp;
-        URL url;
-        try {
-            url = new URL(tracker_request.buildBaseUrl());
-        } catch (IOException e) {
-            listener.onLog("Aborting, unable to build baseURL");
-            return null;
-        }
-        byte[] trackerData;
-        try {
-            trackerData = TrackerResponse.get(url);
-        } catch (IOException e) {
-            listener.onLog("Aborting, error while getting tracker response");
-            return null;
-        }
-        try {
-            trackerResp = Bencoder.decode(trackerData);
-        } catch (IOException e) {
-            listener.onLog("Aborting, unable to decode tracker response");
-            return null;
-        }
 
-        ByteString peers1 = (ByteString) ((Map<Object, Object>) trackerResp).get(new ByteString("peers"));
+        URL url = new URL(tracker_request.buildBaseUrl());
+        byte[] trackerData = TrackerResponse.get(url);
+        Object trackerResp = Bencoder.decode(trackerData);
+
+        ByteString peers1 = (ByteString) ((Map) trackerResp).get(new ByteString("peers"));
 
         byte[] peersArray = peers1.getBytes();
         List<byte[]> peers = new ArrayList<>();
@@ -220,70 +215,61 @@ public class Downloader implements Runnable {
         return peers;
     }
 
-    public void saveToFile(String path) throws IOException {
-        for (int j = 0; j < pieces.size(); j++) {
-            checkPiece(j);
-        }
-
-        FileOutputStream file = new FileOutputStream(path);
-
-        for (List<ByteString> piece : pieces) {
-            for (ByteString chunk : piece) {
-                file.write(chunk.getBytes());
+    private synchronized void checkPieces() throws IOException {
+        int okCount = 0;
+        chunksLeft = 0;
+        for (int i=0; i < pieces.size(); i ++) {
+            boolean ok = checkPiece(i);
+            if (ok) okCount ++;
+            for (int j=0; j < pieces.get(i).size(); j ++) {
+                pieces.get(i).set(j, ok);
+                if (!ok) chunksLeft ++;
             }
         }
 
-        file.close();
+        listener.onLog(okCount + "/" + pieces.size() + " of pieces are already downloaded");
     }
 
     /**
      * Compute hash of a piece and compare to metainfo hash.
      */
-    private void checkPiece(int pieceIndex) throws IOException {
-        ByteArrayOutputStream o = new ByteArrayOutputStream();
-
-        System.out.println("check " + pieceIndex + " " + pieces.get(pieceIndex).size());
-        for (ByteString b : pieces.get(pieceIndex)) {
-            o.write(b.getBytes());
-        }
-
-        ByteString h = Utils.computeSha1Hash(new ByteString(o.toByteArray()));
-        if (metainfo.getPieceHash(pieceIndex).equals(h)) {
-            System.out.println("piece " + pieceIndex + " ok");
-        } else {
-            System.out.println("piece " + pieceIndex + " FAILED (length: " + o.toByteArray().length + " " + metainfo.getPieceLength() + ")");
-        }
+    private boolean checkPiece(int pieceIndex) throws IOException {
+        int length = Math.min(metainfo.getPieceLength(), metainfo.getLength() - metainfo.getPieceLength() * pieceIndex);
+        //System.out.println("len " + length);
+        ByteString h = Utils.computeSha1Hash(chunker.read(pieceIndex, 0, length));
+        return metainfo.getPieceHash(pieceIndex).equals(h);
     }
 
     /**
      * Send request for a piece to the peer.
      */
     private void requestPiece(PeerConnection peer, int pieceIndex, int chunkIndex) throws IOException {
-        int maxLength1 = metainfo.getLength() - pieceIndex * metainfo.getPieceLength() - chunkIndex * CHUNK_LENGTH;
-        int maxLength2 = metainfo.getPieceLength() - chunkIndex * CHUNK_LENGTH;
-        int length = Math.min(CHUNK_LENGTH, Math.min(maxLength1, maxLength2));
+        int maxLength1 = metainfo.getLength() - pieceIndex * metainfo.getPieceLength() - chunkIndex * FileChunker.CHUNK_LENGTH;
+        int maxLength2 = metainfo.getPieceLength() - chunkIndex * FileChunker.CHUNK_LENGTH;
+        int length = Math.min(FileChunker.CHUNK_LENGTH, Math.min(maxLength1, maxLength2));
         if (length <= 0) throw new RuntimeException("bad length " + maxLength1 + " " + maxLength2);
 
-        peer.sendRequest(pieceIndex, chunkIndex * CHUNK_LENGTH, length);
+        peer.sendRequest(pieceIndex, chunkIndex * FileChunker.CHUNK_LENGTH, length);
     }
 
     /**
-     * Initializes array when file data will be kept.
+     * Initializes status array.
      */
     private void initChunks() {
         int pieceCount = (metainfo.getLength() + metainfo.getPieceLength() - 1) / metainfo.getPieceLength();
-        int chunkCount = (metainfo.getPieceLength() + CHUNK_LENGTH - 1) / CHUNK_LENGTH;
+        int chunkCount = (metainfo.getPieceLength() + FileChunker.CHUNK_LENGTH - 1) / FileChunker.CHUNK_LENGTH;
 
         for (int i = 0; i < pieceCount; i++) {
             int count = chunkCount;
             if (i == pieceCount - 1) {
-                int lastLength = metainfo.getLength() - metainfo.getPieceLength() * (pieceCount-1);
+                int lastLength = metainfo.getLength() - metainfo.getPieceLength() * (pieceCount - 1);
                 if (lastLength == 0) throw new RuntimeException("calculation error");
-                count = (lastLength + CHUNK_LENGTH - 1) / CHUNK_LENGTH;
+                count = (lastLength + FileChunker.CHUNK_LENGTH - 1) / FileChunker.CHUNK_LENGTH;
             }
-            ArrayList<ByteString> l = new ArrayList<ByteString>();
+
+            ArrayList<Boolean> l = new ArrayList<Boolean>();
             for (int j = 0; j < count; j++) {
-                l.add(null);
+                l.add(false);
                 chunksLeft++;
                 allChunkCount++;
             }

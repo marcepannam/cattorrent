@@ -19,13 +19,16 @@ import static java.lang.Character.toUpperCase;
 public class TrackerRequest {
     private static final String clientVersion = "-CA0001-";
     public static final String clientId = computeClientId();
-    public enum Event { STARTED, STOPPED, COMPLETED }
+
+    public enum Event {STARTED, STOPPED, COMPLETED}
+
     private Event event;
     private int numWant;
     private int compact;
     private int noPeerId;
     private String baseUrl;
     private Metainfo metainfo;
+
     public TrackerRequest(Metainfo metainfo, Event event) {
         this.metainfo = metainfo;
         this.event = event;
@@ -36,6 +39,7 @@ public class TrackerRequest {
         //change this option to 1 in order to exclude peer id from tracker response
         this.noPeerId = 0;
     }
+
     public String buildBaseUrl() throws IOException {
         StringBuilder baseUrlBuilder = new StringBuilder();
         try {
@@ -74,28 +78,35 @@ public class TrackerRequest {
         }
         return baseUrlBuilder.toString();
     }
+
     private int getLeft() {
         return -1;
         //for first request: return metainfo.getLength();
         //torrent.getUploaded();
     }
+
     private int getUploaded() {
         return -1;
         //torrent.getUploaded();
     }
+
     private int getDownloaded() {
         return -1;
         //torrent.getUploaded();
     }
+
     private int getNumWant() {
         return numWant;
     }
+
     private int getCompact() {
         return compact;
     }
+
     public String getPeerId() {
         return clientId;
     }
+
     private int getPort() throws IOException {
         Integer port = 6881;
         while (port < 6890) {
@@ -118,11 +129,13 @@ public class TrackerRequest {
         //impossible to establish connection in range reserved for BitTorrent Clients
         throw new IOException("Impossible to connect to the port");
     }
+
     private int getNoPeerId() {
         return noPeerId;
     }
+
     private String getEvent() {
-        switch(event) {
+        switch (event) {
             case STARTED:
                 return "started";
             case STOPPED:
@@ -136,7 +149,7 @@ public class TrackerRequest {
 
     public static String urlEncode(byte[] buff) {
         StringBuilder url = new StringBuilder();
-        for (byte b: buff) {
+        for (byte b : buff) {
             if (isAllowed(b)) {
                 url.append(String.format("%c", b));
             } else {
@@ -146,17 +159,19 @@ public class TrackerRequest {
         }
         return url.toString();
     }
+
     private static String computeClientId() {
         SecureRandom random = new SecureRandom();
         byte[] peerId = new byte[20];
         StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i<12; i++) {
-           stringBuilder.append(ThreadLocalRandom.current().nextInt(10));
+        for (int i = 0; i < 12; i++) {
+            stringBuilder.append(ThreadLocalRandom.current().nextInt(10));
         }
-        System.arraycopy(clientVersion.getBytes(),0, peerId, 0, 8);
-        System.arraycopy(stringBuilder.toString().getBytes(),0, peerId, 8, 12);
+        System.arraycopy(clientVersion.getBytes(), 0, peerId, 0, 8);
+        System.arraycopy(stringBuilder.toString().getBytes(), 0, peerId, 8, 12);
         return new String(peerId);
     }
+
     private static boolean isAllowed(byte b) {
         //0-9, a-z, A-Z, ., -, _, ~ ASCII
         return (b >= 48 && b <= 57) || (b >= 65 && b <= 90) ||
