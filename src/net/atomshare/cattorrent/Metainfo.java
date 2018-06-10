@@ -74,7 +74,7 @@ public class Metainfo {
         } else {
             // multi file torrent
             List fs = (List) info.get(new ByteString("files"));
-            length = 0;
+            length = 0; // length of whole torrent
             System.out.println("fs: " + fs);
             for (Object f : fs) {
                 Map fileInfo = (Map) f;
@@ -89,7 +89,7 @@ public class Metainfo {
                         throw new SecurityException("bad path");
                     name += "/" + pathStr;
                 }
-                name = name.substring(1);
+                name = name.substring(1); // remove first slash
                 filesName.add(name);
                 length += flength;
             }

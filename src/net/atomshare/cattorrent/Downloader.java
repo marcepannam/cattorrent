@@ -75,6 +75,7 @@ public class Downloader implements Runnable {
 
                 for (byte[] info : peersInfos) {
                     if(connectedPeers.contains(new ByteString(info))) continue;
+                    if(connectedPeers.size() > 90) continue;
                     PeerConnection peer = new PeerConnection(metainfo, info, listener);
                     peerStart(peer);
                     peers.add(peer);
@@ -106,22 +107,23 @@ public class Downloader implements Runnable {
     private void peerRun(PeerConnection peer) throws IOException {
         peer.init();
 
-        int pendingRequests = 0;
+        int pendingRequests = 0; // number of requests which were sent and without response
 
-        List<Boolean> bitmap = new ArrayList<>();
+        List<Boolean> bitmap = new ArrayList<>(); // our pieces
         for (int i=0; i < pieces.size(); i ++) {
             bitmap.add(isPieceComplete(i));
         }
-        peer.sendBitmap(bitmap);
-        peer.sendUnchoke();
+        peer.sendBitmap(bitmap);// so peer knows which pieces we have
+        peer.sendUnchoke(); // so peer knows peer can ask us for pieces
 
         while (true) {
             //System.out.println("left " + chunksLeft);
             PeerConnection.Message msg = peer.readMessage();
 
             if (msg.kind == PeerConnection.Message.PIECE) {
+                // we got a piece from the peer
                 synchronized (this) {
-                    if (!pieces.get(msg.index).get(msg.begin / FileChunker.CHUNK_LENGTH)) {
+                    if (!pieces.get(msg.index).get(msg.begin / FileChunker.CHUNK_LENGTH)) { // do we already have it?
                         pieces.get(msg.index).set(msg.begin / FileChunker.CHUNK_LENGTH, true);
                         chunker.write(msg.index, msg.begin, new ByteString(msg.body));
                         chunksLeft--;
@@ -134,7 +136,7 @@ public class Downloader implements Runnable {
                 pendingRequests--;
             }
 
-            if (msg.kind == PeerConnection.Message.REQUEST) {
+            if (msg.kind == PeerConnection.Message.REQUEST) { // peer wants a piece from us
                 ByteString s = chunker.read(msg.index, msg.begin, msg.length);
                 peer.sendPiece(msg.index, msg.begin, s);
             }
@@ -158,6 +160,7 @@ public class Downloader implements Runnable {
         synchronized (this) {
             if (chunksLeft == 0) return false;
 
+            // select a piece randomly
             List<Integer> candidates = new ArrayList<>();
 
             for (int j = 0; j < pieces.size(); j++) {
@@ -171,6 +174,7 @@ public class Downloader implements Runnable {
             int k = (new Random()).nextInt(candidates.size());
             piece = candidates.get(k);
 
+            // select a chunk randomly
             List<Integer> chunks = new ArrayList<>();
             for (int i = 0; i < pieces.get(piece).size(); i++) {
                 if (!pieces.get(piece).get(i)) {
@@ -203,7 +207,7 @@ public class Downloader implements Runnable {
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
 
         URL url = new URL(tracker_request.buildBaseUrl());
-        byte[] trackerData = TrackerResponse.get(url);
+        byte[] trackerData = TrackerResponse.get(url); // make the HTTP request
         Object trackerResp = Bencoder.decode(trackerData);
 
         ByteString peers1 = (ByteString) ((Map) trackerResp).get(new ByteString("peers"));
@@ -216,6 +220,9 @@ public class Downloader implements Runnable {
         return peers;
     }
 
+    /**
+     * Check piece hashes and update 'pieces' list.
+     */
     private synchronized void checkPieces() throws IOException {
         int okCount = 0;
         chunksLeft = 0;

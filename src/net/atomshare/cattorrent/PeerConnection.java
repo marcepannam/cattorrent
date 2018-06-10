@@ -87,11 +87,13 @@ public class PeerConnection {
         }
     }
 
+    /**
+     * Send request for a chunk.
+     * @param piece index of piece
+     * @param begin position of chunk
+     * @param length length of chunk
+     */
     public void sendRequest(int piece, int begin, int length) throws IOException {
-        // if (!hasPieces.get(piece)) {
-        //     throw new IOException("peer doesn't have this piece");
-        // }
-
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         out.writeInt(13);
         out.writeByte(Message.REQUEST);
@@ -100,12 +102,18 @@ public class PeerConnection {
         out.writeInt(length);
     }
 
+    /**
+     * Tell peer we accept requests from him.
+     */
     public void sendUnchoke() throws IOException {
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         out.writeInt(1);
         out.writeByte(Message.UNCHOKE);
     }
 
+    /**
+     * Tell peer which pieces we have.
+     */
     public void sendBitmap(List<Boolean> bitmap) throws IOException {
         byte[] b = new byte[(bitmap.size() + 7) / 8];
         for (int i=0; i < bitmap.size(); i ++) {
@@ -118,6 +126,12 @@ public class PeerConnection {
         out.write(b);
     }
 
+    /**
+     * Send chunk data to peer.
+     * @param index index of piece
+     * @param begin position of chunk in piece
+     * @param s data
+     */
     public void sendPiece(int index, int begin, ByteString s) throws IOException {
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         out.writeInt(9 + s.length());
@@ -127,6 +141,9 @@ public class PeerConnection {
         out.write(s.getBytes());
     }
 
+    /**
+     * Read a message from the peer.
+     */
     public Message readMessage() throws IOException {
         DataInputStream in = new DataInputStream(socket.getInputStream());
         int length = in.readInt();
@@ -170,13 +187,17 @@ public class PeerConnection {
         return message;
     }
 
+    /**
+     * Connect to the peer and handshake.
+     */
     public void init() throws IOException {
+        // compute ipAddress and port from 6-byte peerInfo
         String ipAddress = Byte.toUnsignedInt(peerInfo[0]) + "." + Byte.toUnsignedInt(peerInfo[1])
                 + "." + Byte.toUnsignedInt(peerInfo[2]) + "." + Byte.toUnsignedInt(peerInfo[3]);
         int port = Byte.toUnsignedInt(peerInfo[5]) + Byte.toUnsignedInt(peerInfo[4]) * 256;
         System.out.println(ipAddress + " " + port);
 
-        socket = new Socket(ipAddress, port);
+        socket = new Socket(ipAddress, port); // connect to the peer
         System.out.println("connected");
         listener.onLog("Connected to peer " + ipAddress + " at port " + port);
 
