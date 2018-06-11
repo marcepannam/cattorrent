@@ -26,6 +26,7 @@ public class FileChunker {
             new File(path).mkdirs();
             for (int i=0; i < metainfo.getFilesName().size(); i ++) {
                 String filePath = path + "/" + metainfo.getFilesName().get(i);
+                new File(filePath).getParentFile().mkdirs();
                 RandomAccessFile f = new RandomAccessFile(filePath, "rw");
                 f.setLength(metainfo.getFilesLength().get(i));
                 files.add(f);

@@ -2,17 +2,16 @@ package net.atomshare.cattorrent;
 
 import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static net.atomshare.cattorrent.Bencoder.decode;
 import static net.atomshare.cattorrent.Bencoder.encode;
@@ -62,6 +61,27 @@ public class Metainfo {
         readLength();
         pieces = readPieces(info);
         name = readName(info);
+    }
+
+    public static void createMetaInfoForFile(String path, String targetPath) throws IOException {
+        RandomAccessFile f = new RandomAccessFile(path, "r");
+
+        // create simple, one piece torrent file
+        Map<Object, Object> a = new HashMap<>();
+        Map<Object, Object> info = new HashMap<>();
+        a.put(new ByteString("announce"), new ByteString("http://localhost:8080/announce"));
+        int length = (int) f.length();
+        info.put(new ByteString("length"), length);
+        byte[] data = new byte[length];
+        f.read(data);
+        info.put(new ByteString("piece length"), length);
+        info.put(new ByteString("pieces"), Utils.computeSha1Hash(new ByteString(data)));
+        info.put(new ByteString("name"), new ByteString(path.substring(path.lastIndexOf('/')+1)));
+        a.put(new ByteString("info"), info);
+
+        FileOutputStream metaInfoOut = new FileOutputStream(targetPath);
+        Bencoder.encode(a, metaInfoOut);
+        metaInfoOut.close();
     }
 
     private void readLength() {

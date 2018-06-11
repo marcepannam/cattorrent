@@ -43,6 +43,7 @@ public class PeerConnection {
         this.peerInfo = peerInfo;
         this.listener = listener;
         hasPieces = new ArrayList<>();
+
         for (int i = 0; i < metainfo.getPieceCount(); i++)
             hasPieces.add(false);
     }
@@ -197,6 +198,7 @@ public class PeerConnection {
         int port = Byte.toUnsignedInt(peerInfo[5]) + Byte.toUnsignedInt(peerInfo[4]) * 256;
         System.out.println(ipAddress + " " + port);
 
+        System.out.println("connecting to " + ipAddress + " " + port);
         socket = new Socket(ipAddress, port); // connect to the peer
         System.out.println("connected");
         listener.onLog("Connected to peer " + ipAddress + " at port " + port);

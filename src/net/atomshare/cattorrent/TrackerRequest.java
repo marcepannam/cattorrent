@@ -35,7 +35,7 @@ public class TrackerRequest {
         this.numWant = 20;
         //change this option to 1 in order to cooperate with more trackers
         //requires implementation of additional functionalities
-        this.compact = 0;
+        this.compact = 1;
         //change this option to 1 in order to exclude peer id from tracker response
         this.noPeerId = 0;
     }
@@ -80,19 +80,15 @@ public class TrackerRequest {
     }
 
     private int getLeft() {
-        return -1;
-        //for first request: return metainfo.getLength();
-        //torrent.getUploaded();
+        return 0;
     }
 
     private int getUploaded() {
-        return -1;
-        //torrent.getUploaded();
+        return 0;
     }
 
     private int getDownloaded() {
-        return -1;
-        //torrent.getUploaded();
+        return 0;
     }
 
     private int getNumWant() {

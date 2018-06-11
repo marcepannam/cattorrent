@@ -207,6 +207,7 @@ public class Downloader implements Runnable {
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
 
         URL url = new URL(tracker_request.buildBaseUrl());
+        System.out.println("tracker URL: " + url);
         byte[] trackerData = TrackerResponse.get(url); // make the HTTP request
         Object trackerResp = Bencoder.decode(trackerData);
 

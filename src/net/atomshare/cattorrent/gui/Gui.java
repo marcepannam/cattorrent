@@ -1,5 +1,7 @@
 package net.atomshare.cattorrent.gui;
 
+import net.atomshare.cattorrent.Metainfo;
+
 import java.io.File;
 import javax.swing.*;
 import javax.swing.event.MenuEvent;
@@ -31,7 +33,7 @@ public class Gui {
         createIcon(myWindow);
         createMenu(myWindow, logArea, fileArea, files);
         JTable downloadsArea = createDownloadsPanel(myWindow);
-        createTorrentButton(myWindow);
+        createTorrentButton(myWindow, logArea, files);
         createDownloadButton(myWindow, logArea, downloadsArea, files, c);
         myWindow.setVisible(true);
     }
@@ -158,12 +160,19 @@ public class Gui {
         return logArea;
     }
 
-    private static void createTorrentButton(JFrame myWindow) {
+    private static void createTorrentButton(JFrame myWindow, JLabel logArea, ArrayList<File> files) {
         JButton buttonTorrent = new JButton("Create torrent");
         buttonTorrent.setBounds(160, 40, 160, 30);
         myWindow.add(buttonTorrent);
         buttonTorrent.addActionListener(actionEvent -> {
-            //to do
+            File f = files.get(files.size() - 1);
+            try {
+                Metainfo.createMetaInfoForFile(f.getAbsolutePath(), f.getAbsolutePath() + ".torrent");
+                logEvent(logArea, "Torrent file saved");
+            } catch(Exception ex) {
+                ex.printStackTrace();
+                logEvent(logArea, "Failed to create torrent file");
+            }
         });
     }
 
