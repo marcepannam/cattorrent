@@ -6,11 +6,11 @@ import java.util.Arrays;
 /**
  * Class which supports storage of byte strings.
  * The class is better than byte array, because it supports
- * comparasion.
+ * comparison.
  */
 
 public class ByteString implements Comparable<ByteString> {
-    // https://ideone.com/edCdbc
+    //https://ideone.com/edCdbc
     private byte[] data;
 
     public ByteString(byte[] b) {

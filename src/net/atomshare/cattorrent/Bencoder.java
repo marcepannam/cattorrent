@@ -33,7 +33,7 @@ public class Bencoder {
 
         if (b == 'l') {
             byte d = (byte) in.read();
-            List lista = new ArrayList<Object>();
+            List lista = new ArrayList<>();
             lista = parseList(in, (ArrayList<Object>) lista, d);
             return lista;
         }
@@ -168,10 +168,6 @@ public class Bencoder {
             throw new RuntimeException(e);
         }
         return out.toByteArray();
-    }
-
-    public static void main(String[] args) {
-
     }
 
 }

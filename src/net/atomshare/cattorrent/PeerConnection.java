@@ -1,13 +1,10 @@
 package net.atomshare.cattorrent;
 
-import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static net.atomshare.cattorrent.PeerConnection.Message.BITFIELD;
 import static net.atomshare.cattorrent.PeerConnection.Message.HAVE;
@@ -153,7 +150,6 @@ public class PeerConnection {
         Message message = new Message();
         message.kind = kind;
 
-        System.err.println("message: " + kind);
         if (kind == PIECE) {
             message.index = in.readInt();
             message.begin = in.readInt();
@@ -169,7 +165,6 @@ public class PeerConnection {
             in.readFully(mask);
             for (int i = 0; i < hasPieces.size(); i++) {
                 if (((mask[i / 8] >> (7 - i % 8)) & 1) != 0) {
-                    //System.out.println("hasPiece " + i);
                     hasPieces.set(i, true);
                 }
             }
@@ -196,11 +191,8 @@ public class PeerConnection {
         String ipAddress = Byte.toUnsignedInt(peerInfo[0]) + "." + Byte.toUnsignedInt(peerInfo[1])
                 + "." + Byte.toUnsignedInt(peerInfo[2]) + "." + Byte.toUnsignedInt(peerInfo[3]);
         int port = Byte.toUnsignedInt(peerInfo[5]) + Byte.toUnsignedInt(peerInfo[4]) * 256;
-        System.out.println(ipAddress + " " + port);
 
-        System.out.println("connecting to " + ipAddress + " " + port);
         socket = new Socket(ipAddress, port); // connect to the peer
-        System.out.println("connected");
         listener.onLog("Connected to peer " + ipAddress + " at port " + port);
 
         // write handshake
@@ -225,7 +217,7 @@ public class PeerConnection {
         if (!Arrays.equals(this.metainfo.getInfoHash(), b)) throw new IOException("bad hash");
         b = new byte[20];
         in.readFully(b);
-        System.out.println("peer client id: " + new ByteString(b));
+        listener.onLog("Peer client id: " + new ByteString(b));
 
         // write "Interested" status
         DataOutputStream dout = new DataOutputStream(socket.getOutputStream());

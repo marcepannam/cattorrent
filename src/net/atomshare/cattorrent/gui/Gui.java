@@ -110,14 +110,10 @@ public class Gui {
             }
 
             @Override
-            public void menuDeselected(MenuEvent menuEvent) {
-
-            }
+            public void menuDeselected(MenuEvent menuEvent) { }
 
             @Override
-            public void menuCanceled(MenuEvent menuEvent) {
-
-            }
+            public void menuCanceled(MenuEvent menuEvent) { }
         });
 
         //create menu items

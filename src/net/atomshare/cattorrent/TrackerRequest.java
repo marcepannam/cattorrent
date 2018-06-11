@@ -33,8 +33,6 @@ public class TrackerRequest {
         this.metainfo = metainfo;
         this.event = event;
         this.numWant = 20;
-        //change this option to 1 in order to cooperate with more trackers
-        //requires implementation of additional functionalities
         this.compact = 1;
         //change this option to 1 in order to exclude peer id from tracker response
         this.noPeerId = 0;
@@ -157,7 +155,6 @@ public class TrackerRequest {
     }
 
     private static String computeClientId() {
-        SecureRandom random = new SecureRandom();
         byte[] peerId = new byte[20];
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < 12; i++) {

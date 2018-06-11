@@ -1,7 +1,5 @@
 package net.atomshare.cattorrent;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -24,7 +22,6 @@ import static net.atomshare.cattorrent.Bencoder.encodeAsArray;
  */
 
 public class Metainfo {
-    private Path path;
     private ByteString announceUrl;
     private Map info;
     private Integer pieceLength;

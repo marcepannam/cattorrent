@@ -1,7 +1,5 @@
 package net.atomshare.cattorrent;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
@@ -117,7 +115,6 @@ public class Downloader implements Runnable {
         peer.sendUnchoke(); // so peer knows peer can ask us for pieces
 
         while (true) {
-            //System.out.println("left " + chunksLeft);
             PeerConnection.Message msg = peer.readMessage();
 
             if (msg.kind == PeerConnection.Message.PIECE) {
@@ -130,7 +127,7 @@ public class Downloader implements Runnable {
                         tellProgress();
                         if (chunksLeft == 0) break;
                     } else {
-                        System.out.println("duplicate chunk " + msg.index + " " + msg.begin);
+                        System.err.println("duplicate chunk " + msg.index + " " + msg.begin);
                     }
                 }
                 pendingRequests--;
@@ -142,7 +139,6 @@ public class Downloader implements Runnable {
             }
 
             if (!peer.isChocked()) {
-                //System.out.println("REQ:" + pendingRequests);
                 while (pendingRequests < 10) {
                     if (requestRandomPiece(peer))
                         pendingRequests++;
@@ -207,7 +203,6 @@ public class Downloader implements Runnable {
         TrackerRequest tracker_request = new TrackerRequest(metainfo, TrackerRequest.Event.STARTED);
 
         URL url = new URL(tracker_request.buildBaseUrl());
-        System.out.println("tracker URL: " + url);
         byte[] trackerData = TrackerResponse.get(url); // make the HTTP request
         Object trackerResp = Bencoder.decode(trackerData);
 
@@ -276,7 +271,7 @@ public class Downloader implements Runnable {
                 count = (lastLength + FileChunker.CHUNK_LENGTH - 1) / FileChunker.CHUNK_LENGTH;
             }
 
-            ArrayList<Boolean> l = new ArrayList<Boolean>();
+            ArrayList<Boolean> l = new ArrayList<>();
             for (int j = 0; j < count; j++) {
                 l.add(false);
                 chunksLeft++;

@@ -66,7 +66,6 @@ public class FileChunker {
     public synchronized void write(int piece, int begin, ByteString b) throws IOException {
         int length = b.length();
         int pos = piece * this.metainfo.getPieceLength() + begin;
-        //System.out.println("piece " + piece + " begin " + begin + " " + b.length() + " ->" + metainfo.getFilesName().size());
         for (int i=0; i < metainfo.getFilesName().size(); i ++) {
             int filePos = pos - metainfo.getFilesBegin().get(i);
             int fileLength = metainfo.getFilesLength().get(i);
@@ -84,16 +83,11 @@ public class FileChunker {
             }
             readLength = Math.min(readLength, metainfo.getFilesLength().get(i) - filePos);
 
-            //System.out.println("readLength " + readLength + " targetPos " + targetPos + " filePos " + filePos);
             if (readLength <= 0) continue;
 
             RandomAccessFile file = files.get(i);
             file.seek(filePos);
             file.write(b.getBytes(), targetPos, readLength);
         }
-    }
-
-    public synchronized void flush() {
-
     }
 }
