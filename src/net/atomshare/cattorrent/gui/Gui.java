@@ -2,6 +2,8 @@ package net.atomshare.cattorrent.gui;
 
 import java.io.File;
 import javax.swing.*;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -91,6 +93,25 @@ public class Gui {
         //create menus
         JMenu fileMenu = new JMenu("File");
         JMenu aboutMenu = new JMenu("About");
+        aboutMenu.addMenuListener(new MenuListener() {
+            @Override
+            public void menuSelected(MenuEvent menuEvent) {
+                JLabel label = new JLabel("<html><center>Cattorrent - Bittorrent client by<br/>"+
+                        "Marianna Siembiot & Mikołaj Duczmal<br/>" +"2018</center></html>");
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(myWindow, label,
+                        "Cattorrent info", JOptionPane.INFORMATION_MESSAGE));
+            }
+
+            @Override
+            public void menuDeselected(MenuEvent menuEvent) {
+
+            }
+
+            @Override
+            public void menuCanceled(MenuEvent menuEvent) {
+
+            }
+        });
 
         //create menu items
         JMenuItem openMenuItem = new JMenuItem("Open");

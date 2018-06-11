@@ -29,7 +29,12 @@ public class Controller {
         try  {
             String path = file.getAbsolutePath();
             if (!path.endsWith(".torrent")) {
-                logEvent(logArea, "Please select .torrent file");
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(myWindow,
+                        "It is impossible to open provided file.\n" +
+                                "Please check if it is a valid torrent file. Its extension " +
+                                "should be: \".torrent\"",
+                        "Warning", JOptionPane.WARNING_MESSAGE));
+                logEvent(logArea, "File with invalid extension selected");
                 return false;
             }
             String target = path.substring(0, path.length() - 8);
@@ -60,22 +65,10 @@ public class Controller {
         } catch (IOException e) {
             logEvent(logArea, "Error while parsing file " + file.getName());
             logEvent(logArea, e.getMessage());
-            int idx = file.getName().lastIndexOf('.');
-            if (idx > 0) {
-                String extension = file.getName().substring(idx);
-                if (!extension.equals(".torrent")) {
-                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(myWindow,
-                            "It is impossible to open provided file.\n" +
-                                    "Please check if it is a valid torrent file. Its extension is: \""
-                            + extension + "\" and should be: \".torrent\"",
-                            "Warning", JOptionPane.WARNING_MESSAGE));
-                }
-            } else {
-                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(myWindow,
-                        "It is impossible to open provided file.\n" +
-                                "Please check if it is a valid torrent file.",
-                        "Warning", JOptionPane.WARNING_MESSAGE));
-            }
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(myWindow,
+                    "It is impossible to open provided file.\n" +
+                            "Please check if it is a valid torrent file.",
+                    "Warning", JOptionPane.WARNING_MESSAGE));
         }
         return false;
     }
