@@ -72,7 +72,12 @@ public class Gui {
     }
 
     private static JTable createDownloadsPanel(JFrame myWindow) {
-        JTable downloadsTable = new JTable(new DefaultTableModel(new Object[][][]{}, new String[]{"Name", "Progress"}));
+        JTable downloadsTable = new JTable(new DefaultTableModel(new Object[][][]{}, new String[]{"Name", "Progress"}) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
         downloadsTable.setAutoCreateRowSorter(true);
         downloadsTable.setBackground(Color.LIGHT_GRAY);
         JTableHeader header = downloadsTable.getTableHeader();
